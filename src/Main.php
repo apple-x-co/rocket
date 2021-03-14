@@ -4,7 +4,7 @@ namespace Rocket;
 
 class Main
 {
-    const VERSION = '1.1.7';
+    const VERSION = '0.1.0';
 
     /** @var Options */
     private $options = null;
