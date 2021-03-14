@@ -1,0 +1,32 @@
+{
+  "name": "apple-x-co/rocket",
+  "description": "git & rsync & slack",
+  "authors": [
+    {
+      "name": "apple-x-co",
+      "email": "apple.x.co@gmail.com"
+    }
+  ],
+  "bin": [
+    "bin/run.php"
+  ],
+  "require": {
+    "ext-curl": "*",
+    "ext-json": "*",
+    "ext-posix": "*",
+    "ext-zip": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Rocket\\": "src/"
+    }
+  },
+  "scripts": {
+    "build": "rm -rf dist/rocket.phar; phar-composer build .; mv -f rocket.phar dist/rocket.phar; chmod u+x dist/rocket.phar"
+  },
+  "config": {
+    "platform": {
+      "php": "5.6"
+    }
+  }
+}

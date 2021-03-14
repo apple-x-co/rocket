@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "slack": {
+    "channel": "channel-name",
+    "username": "project-name",
+    "incomingWebhook": "https://hooks.slack.com/services/xxx"
+  },
+  "user": "centos-user",
+  "source": {
+    "directory": "/home/sample/source/"
+  },
+  "url": "https://example.com/",
+  "destinations": [
+    {
+      "from": "/home/sample/source/htdocs/",
+      "to": "/var/www/vhosts/example.com/htdocs/",
+      "excludes": [
+        "wp-config.php",
+        "wp-content/debug.log",
+        "wp-content/advanced-cache.php",
+        "wp-content/backup-db/",
+        "wp-content/backups/",
+        "wp-content/blogs.dir/",
+        "wp-content/cache/",
+        "wp-content/upgrade/",
+        "wp-content/uploads/",
+        "wp-content/wp-cache-config.php",
+        "wp-content/plugins/hello.php",
+        "wp-content/plugins/siteguard/really-simple-captcha/tmp/",
+        "wp-content/plugins/siteguard/tmp/",
+        "wp-content/languages/",
+        "wp-content/themes/jcp/assets-src/",
+        "uploads/",
+        "readme.html",
+        "license.txt",
+        "healthcheck.txt",
+        "README.md",
+        ".htaccess",
+        ".htaccess*",
+        ".gitignore",
+        ".gitkeep",
+        ".editorconfig"
+      ]
+    },
+    {
+      "from": "/home/sample/source/data/",
+      "to": "/var/www/vhosts/example.com/data/"
+    }
+  ],
+  "rsync" : {
+    "path": "/usr/bin/rsync",
+    "option": "--recursive --links --checksum --verbose --human-readable --delete"
+  },
+  "git": {
+    "path": "/usr/bin/git"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "slack": {
+    "channel": "channel-name",
+    "username": "project-name",
+    "incomingWebhook": "https://hooks.slack.com/services/xxx"
+  },
+  "user": "centos-user",
+  "source": {
+    "directory": "/home/sample/source/"
+  },
+  "url": "https://example.com/",
+  "destinations": [
+    {
+      "from": "/home/sample/source/htdocs/",
+      "to": "/var/www/vhosts/example.com/htdocs/",
+      "excludes": [
+        ".gitkeep",
+        ".gitignore",
+        ".editorconfig",
+        "healthcheck.txt"
+      ]
+    },
+    {
+      "from": "/home/sample/source/data/",
+      "to": "/var/www/vhosts/example.com/data/"
+    }
+  ],
+  "rsync" : {
+    "path": "/usr/bin/rsync",
+    "option": "--recursive --links --checksum --verbose --human-readable --delete"
+  },
+  "git": {
+    "path": "/usr/bin/git"
+  }
+}

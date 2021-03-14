@@ -1,0 +1,88 @@
+{
+  "version": "1.0",
+  "slack": {
+    "channel": "channel-name",
+    "username": "project-name",
+    "incomingWebhook": "https://hooks.slack.com/services/xxx"
+  },
+  "user": "centos-user",
+  "source": {
+    "directory": "/home/sample/source/"
+  },
+  "url": "https://example.com/",
+  "destinations": [
+    {
+      "from": "/home/sample/source/htdocs/",
+      "to": "/var/www/vhosts/example.com/htdocs/",
+      "excludes": [
+        "/.devcontainer/",
+        "/.github/",
+        "/app/Plugin/",
+        "/app/PluginData/",
+        "/app/proxy/",
+        "/codeception/",
+        "/dockerbuild/",
+        "/gulp/",
+        "/html/upload",
+        "/html/user_data",
+        "/image_compositor",
+        "/node_modules/",
+        "/var/",
+        "/vendor/",
+        "/zap/",
+        "/.coveralls.yml",
+        "/.dockerignore",
+        "/.editorconfig",
+        "/.env",
+        "/.env.dist",
+        "/.env.install",
+        "/.env.local",
+        "/.gitignore",
+        "/.gitmodules",
+        "/.maitenance",
+        "/.php_cs.dist",
+        "/.scrutinizer.yml",
+        "/.travis.yml",
+        "/app.json",
+        "/appveyor.yml",
+        "/codeception.sh",
+        "/codeception.yml",
+        "/COPYING",
+        "/docker-compose-owaspzap.yml",
+        "/docker-compose.yml",
+        "/Dockerfile",
+        "/gulpfile.js",
+        "/healthcheck.txt",
+        "/LICENSE.txt",
+        "/nginx.conf.sample",
+        "/package-lock.json",
+        "/package.json",
+        "/phpunit.xml.dist",
+        "/Procfile",
+        "/README.md",
+        "/web.config"
+      ],
+      "scripts": [
+        {
+          "path": "/var/www/vhosts/example.com/htdocs/bin/console",
+          "option": "cache:clear --no-warmup"
+        },
+        {
+          "path": "/var/www/vhosts/example.com/htdocs/bin/console",
+          "option": "cache:warmup"
+        }
+      ]
+    },
+    {
+      "from": "/home/sample/source/data/",
+      "to": "/var/www/vhosts/example.com/data/"
+    }
+  ],
+  "rsync" : {
+    "path": "/usr/bin/rsync",
+    "option": "--recursive --links --checksum --verbose --human-readable --delete"
+  },
+  "git": {
+    "path": "/usr/bin/git"
+  }
+}
