@@ -4,7 +4,7 @@ namespace Rocket;
 
 class Main
 {
-    const VERSION = '0.1.0';
+    const VERSION = '0.1.1';
 
     /** @var Options */
     private $options = null;
@@ -333,18 +333,18 @@ class Main
             return;
         }
 
-        $archiver = $this->options->hasUnzip() ?
-            new ArchiverCommand($this->options->getUnzip(), $working_directory_path) :
-            new ArchiverZip($working_directory_path);
+//        $archiver = $this->options->hasUnzip() ?
+//            new ArchiverCommand($this->options->getUnzip(), $working_directory_path) :
+//            new ArchiverZip($working_directory_path);
 
-        $updater = new Updater($archiver);
+        $updater = new Updater($working_directory_path);
         $result = $updater->upgrade();
-        if ( ! $result->isSuccess()) {
+        if ( ! $result->isOk()) {
             $this->printError($result->getError());
             return;
         }
 
-        $this->printInfo($working_directory_path);
+        $this->printInfo('New version: ' . $result->getFilePath());
     }
 
     /**

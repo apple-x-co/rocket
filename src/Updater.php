@@ -2,45 +2,43 @@
 
 namespace Rocket;
 
+use Rocket\Updater\Result;
+
 class Updater
 {
     const URL = 'https://api.github.com/repos/apple-x-co/rocket/releases/latest';
 
-    /** @var ArchiverInterface */
-    private $archiver = null;
+    /** @var string */
+    private $dir;
 
-    /**
-     * Updater constructor.
-     *
-     * @param ArchiverInterface $archiver
-     */
-    public function __construct(ArchiverInterface $archiver)
+    public function __construct($dir)
     {
-        $this->archiver = $archiver;
+        $this->dir = $dir;
     }
 
     /**
-     * @return UpdaterResult
+     * @return Result
      */
     public function upgrade()
     {
         $latest = $this->getReleaseLatest();
         if ($latest === null) {
-            return UpdaterResult::failure('No versions.');
+            return Result::failure('No versions.');
         }
 
         if (version_compare(Main::VERSION, $latest['version'], '>=')) {
-            return UpdaterResult::failure('Already have the latest version.');
+            return Result::failure('Already have the latest version.');
         }
 
-        // DOWNLOAD
+        // Download
         $tempfile = $this->download($latest['url']);
 
-        // UNZIP
-        $file_path = stream_get_meta_data($tempfile)['uri'];
-        $this->archiver->unarchive($file_path);
+        // Move
+        $temp_path = stream_get_meta_data($tempfile)['uri'];
+        $file_path = $this->dir . '/' . basename($latest['url']);
+        rename($temp_path, $file_path);
 
-        return UpdaterResult::success();
+        return Result::success($file_path);
     }
 
     private function download($url)
@@ -90,60 +88,13 @@ class Updater
 
         $result = json_decode($result, true);
 
-        if (! isset($result['tag_name'], $result['zipball_url'])) {
+        if (! isset($result['tag_name'], $result['assets'][0]['browser_download_url'])) {
             return null;
         }
 
         return [
-            'version' => substr($result['tag_name'], 1),
-            'url'     => $result['zipball_url']
+            'version' => $result['tag_name'],
+            'url' => $result['assets'][0]['browser_download_url']
         ];
-    }
-}
-
-class UpdaterResult {
-
-    /** @var boolean */
-    private $success;
-
-    /** @var string */
-    private $error;
-
-    public static function success()
-    {
-        $instance = new static();
-        $instance->success = true;
-
-        return $instance;
-    }
-
-    /**
-     * @param string $error
-     *
-     * @return UpdaterResult
-     */
-    public static function failure($error)
-    {
-        $instance = new static();
-        $instance->success = false;
-        $instance->error = $error;
-
-        return $instance;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isSuccess()
-    {
-        return $this->success;
-    }
-
-    /**
-     * @return string
-     */
-    public function getError()
-    {
-        return $this->error;
     }
 }
