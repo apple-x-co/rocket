@@ -4,7 +4,7 @@ namespace Rocket;
 
 class Main
 {
-    const VERSION = '0.1.3';
+    const VERSION = '0.1.4';
 
     /** @var Options */
     private $options = null;
@@ -113,30 +113,13 @@ class Main
                 return;
             }
 
-            // PRUNE
-            $command = Command::define($configure->read('git.path', '/usr/bin/git'));
-            $command
-                ->addArgument('--git-dir', $directory_path . '.git', '=')
-                ->addArgument('--work-tree', $directory_path, '=')
-                ->addArgument('--prune')
-                ->addArgument('fetch')
-                ->execute();
-
-            if ($command->isSuccess()) {
-                $this->printInfo('> ' . $command->string());
-                $this->printInfo($command->getOutputString());
-            } else {
-                $this->printError('> ' . $command->string());
-                $this->printError($command->getOutputString());
-                return;
-            }
-
-            // PULL
+            // PULL WITH PRUNE
             $command = Command::define($configure->read('git.path', '/usr/bin/git'));
             $command
                 ->addArgument('--git-dir', $directory_path . '.git', '=')
                 ->addArgument('--work-tree', $directory_path, '=')
                 ->addArgument('pull')
+                ->addArgument('--prune')
                 ->setSubscribeEvent(CommandEvents::BEFORE_EXECUTION, function ($command) use ($self) {
                     /** @var Command $command */
                     if ($self->options->hasDebug()) {
