@@ -4,7 +4,7 @@ namespace Rocket;
 
 class Main
 {
-    const VERSION = '0.1.1';
+    const VERSION = '0.1.2';
 
     /** @var Options */
     private $options = null;
@@ -102,10 +102,10 @@ class Main
                 })
                 ->execute();
             if ($command->isSuccess()) {
-                $this->printInfo('> git remote show origin');
+                $this->printInfo('> ' . $command->string());
                 $this->printInfo($command->getOutputString());
             } else {
-                $this->printError('> git remote show origin');
+                $this->printInfo('> ' . $command->string());
                 $this->printError($command->getOutputString());
                 return;
             }
@@ -118,6 +118,7 @@ class Main
             $command
                 ->addArgument('--git-dir', $directory_path . '.git', '=')
                 ->addArgument('--work-tree', $directory_path, '=')
+                ->addArgument('--prune')
                 ->addArgument('pull')
                 ->setSubscribeEvent(CommandEvents::BEFORE_EXECUTION, function ($command) use ($self) {
                     /** @var Command $command */
@@ -128,10 +129,10 @@ class Main
                 ->execute();
 
             if ($command->isSuccess()) {
-                $this->printInfo('> git pull');
+                $this->printInfo('> ' . $command->string());
                 $this->printInfo($command->getOutputString());
             } else {
-                $this->printError('> git pull');
+                $this->printError('> ' . $command->string());
                 $this->printError($command->getOutputString());
                 return;
             }
