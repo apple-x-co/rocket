@@ -4,7 +4,7 @@ namespace Rocket;
 
 class Main
 {
-    const VERSION = '0.1.4';
+    const VERSION = '0.1.5';
 
     /** @var Options */
     private $options = null;
@@ -359,15 +359,16 @@ class Main
         echo "  php ./rocket.phar [options]\n";
         echo "\n";
         echo "Options:\n";
-        echo "  -h, --help                                      show this help message and exit\n";
-        echo "  -c, --config {file name}                        configure file name\n";
-        echo "  -g, --git [pull]                                git  \n";
-        echo "  -s, --sync [dry|confirm|force]                  rsync\n";
-        echo "  -i, --init [plain|cakephp3|eccube4|wordpress]   print default configure file\n";
-        echo "  -n, --notify-test                               notification test\n";
-        echo "  -u, --upgrade                                   upgrade\n";
-        echo "      --unzip {path}                              using zip command on upgrade\n";
-        echo "  -v, --verify                                    verify configure\n";
+        echo "  -c, --config {file name}                        Configuration file name as JSON\n";
+        echo "  -g, --git [pull]                                Git operation\n";
+        echo "  -h, --help                                      Display this help message\n";
+        echo "  -i, --init [plain|cakephp3|eccube4|wordpress]   Print sample configuration file\n";
+        echo "  -n, --notify-test                               Slack notification test\n";
+        echo "      --no-color                                  without color\n";
+        echo "  -s, --sync [dry|confirm|force]                  Rsync operation\n";
+        echo "  -u, --upgrade                                   Download new version file\n";
+        echo "      --unzip {path}                              Using zip command on upgrade\n";
+        echo "  -v, --verify                                    Verify configuration file\n";
     }
 
     /**
