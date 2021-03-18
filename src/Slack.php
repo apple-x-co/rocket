@@ -93,10 +93,10 @@ class Slack
                 new SlackBlock\Divider()
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('mrkdwn', "*Git pull*\n```TEXT```")
+                \Rocket\SlackBlock\Section::text('mrkdwn', "*Git pull*\n```HELLO WORLD```")
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('mrkdwn', "*Rsync*\n```TEXT```")
+                \Rocket\SlackBlock\Section::text('mrkdwn', "*Rsync*\n```HELLO WORLD```")
             )
             ->addBlock(
                 new SlackBlock\Divider()
@@ -108,6 +108,12 @@ class Slack
                     )
                     ->addElement(
                         new SlackBlock\ContextElement('mrkdwn', 'Version: ' . Main::appName() . ' ' . Main::VERSION)
+                    )
+            )
+            ->addBlock(
+                (new \Rocket\SlackBlock\Context())
+                    ->addElement(
+                        new SlackBlock\ContextElement('mrkdwn', 'Configuration: ' . $configure->getConfigPath())
                     )
             );
 

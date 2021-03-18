@@ -6,7 +6,7 @@ use Phar;
 
 class Main
 {
-    const VERSION = '0.1.5';
+    const VERSION = '0.1.6';
 
     /** @var Options */
     private $options = null;
@@ -44,20 +44,21 @@ class Main
             $this->printUsage();
             return;
         }
-        if (! file_exists($this->options->getConfig())) {
+        $config_path = realpath($this->options->getConfig());
+        if (! file_exists($config_path)) {
             $this->printInit();
             return;
         }
         if ($this->options->hasVerify()) {
-            if (Configure::verify($this->options->getConfig())) {
-                $this->printInfo($this->options->getConfig() . ': OK');
+            if (Configure::verify($config_path)) {
+                $this->printInfo($config_path . ': OK');
             } else {
-                $this->printError($this->options->getConfig() . ': NG');
+                $this->printError($config_path . ': NG');
             }
             return;
         }
 
-        $configure = new Configure($this->options->getConfig());
+        $configure = new Configure($config_path);
         $self = $this;
 
         // USER CHECK
@@ -142,7 +143,7 @@ class Main
 
         // SYNC
         $sync_log = null;
-        $file_changed = false;
+        $is_file_changed = false;
         if ($this->options->hasSync()) {
             $sync = $this->options->getSync();
             $destinations = $configure->read('destinations');
@@ -239,7 +240,7 @@ class Main
                         continue;
                     }
 
-                    $file_changed = true;
+                    $is_file_changed = true;
                 }
 
                 foreach ($scripts as $script) {
@@ -264,7 +265,7 @@ class Main
         }
 
         // NOTIFICATION
-        if ($file_changed) {
+        if ($is_file_changed) {
             $slackBlock = new SlackBlock();
             $slackBlock
                 ->addBlock(
@@ -311,6 +312,12 @@ class Main
                         )
                         ->addElement(
                             new SlackBlock\ContextElement('mrkdwn', 'Version: ' . self::appName() . ' ' . self::VERSION)
+                        )
+                )
+                ->addBlock(
+                    (new \Rocket\SlackBlock\Context())
+                        ->addElement(
+                            new SlackBlock\ContextElement('mrkdwn', 'Configuration: ' . $configure->getConfigPath())
                         )
                 );
 
