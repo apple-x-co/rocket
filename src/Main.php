@@ -2,6 +2,8 @@
 
 namespace Rocket;
 
+use Phar;
+
 class Main
 {
     const VERSION = '0.1.5';
@@ -10,8 +12,6 @@ class Main
     private $options = null;
 
     /**
-     * Main constructor.
-     *
      * @param Options $options
      */
     public function __construct($options)
@@ -310,7 +310,7 @@ class Main
                             new SlackBlock\ContextElement('mrkdwn', 'Date: ' . date('Y/m/d H:i:s'))
                         )
                         ->addElement(
-                            new SlackBlock\ContextElement('mrkdwn', 'Version: ' . self::VERSION)
+                            new SlackBlock\ContextElement('mrkdwn', 'Version: ' . self::appName() . ' ' . self::VERSION)
                         )
                 );
 
@@ -324,8 +324,18 @@ class Main
     }
 
     /**
-     *
+     * @return string
      */
+    public static function appName()
+    {
+        $name = Phar::running(false);
+        if ($name === '') {
+            $name = __FILE__;
+        }
+
+        return $name;
+    }
+
     private function upgrade()
     {
         $working_directory_path = sys_get_temp_dir() . '/' . 'rocket-' . substr(str_shuffle('1234567890abcdefghijklmnopqrstuvwxyz'), 0, 8);
@@ -348,9 +358,6 @@ class Main
         $this->printInfo('New version: ' . $result->getFilePath());
     }
 
-    /**
-     *
-     */
     private function printHelp()
     {
         echo 'rocket.phar ' . self::VERSION . "\n";
@@ -372,7 +379,7 @@ class Main
     }
 
     /**
-     * @var string $target
+     * @var string $template
      */
     private function printConfig($template)
     {
@@ -396,17 +403,11 @@ class Main
         echo "\n";
     }
 
-    /**
-     *
-     */
     private function printUsage()
     {
         $this->printWarning('usage: php ./rocket.phar --config ./rocket.json --git [pull] --sync [dry|confirm|force]');
     }
 
-    /**
-     *
-     */
     private function printInit()
     {
         $this->printWarning('usage: php ./rocket.phar --init > ./rocket.json');
@@ -430,7 +431,7 @@ class Main
     }
 
     /**
-     * @param $text
+     * @param string $text
      */
     private function printWarning($text)
     {
@@ -439,7 +440,7 @@ class Main
     }
 
     /**
-     * @param $text
+     * @param string $text
      */
     private function printInfo($text)
     {
@@ -448,7 +449,7 @@ class Main
     }
 
     /**
-     * @param $text
+     * @param string $text
      */
     private function printDebug($text)
     {
