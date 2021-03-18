@@ -149,7 +149,7 @@ class Command
     {
         $string = '';
         foreach ($this->output as $output) {
-            $string .= $output . "\n";
+            $string .= $output . PHP_EOL;
         }
 
         return $string;

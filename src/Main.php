@@ -2,16 +2,16 @@
 
 namespace Rocket;
 
+use Phar;
+
 class Main
 {
-    const VERSION = '0.1.4';
+    const VERSION = '0.1.5';
 
     /** @var Options */
     private $options = null;
 
     /**
-     * Main constructor.
-     *
      * @param Options $options
      */
     public function __construct($options)
@@ -310,7 +310,7 @@ class Main
                             new SlackBlock\ContextElement('mrkdwn', 'Date: ' . date('Y/m/d H:i:s'))
                         )
                         ->addElement(
-                            new SlackBlock\ContextElement('mrkdwn', 'Version: ' . self::VERSION)
+                            new SlackBlock\ContextElement('mrkdwn', 'Version: ' . self::appName() . ' ' . self::VERSION)
                         )
                 );
 
@@ -324,8 +324,18 @@ class Main
     }
 
     /**
-     *
+     * @return string
      */
+    public static function appName()
+    {
+        $name = Phar::running(false);
+        if ($name === '') {
+            $name = __FILE__;
+        }
+
+        return $name;
+    }
+
     private function upgrade()
     {
         $working_directory_path = sys_get_temp_dir() . '/' . 'rocket-' . substr(str_shuffle('1234567890abcdefghijklmnopqrstuvwxyz'), 0, 8);
@@ -348,67 +358,55 @@ class Main
         $this->printInfo('New version: ' . $result->getFilePath());
     }
 
-    /**
-     *
-     */
     private function printHelp()
     {
-        echo 'rocket.phar ' . self::VERSION . "\n";
-        echo "\n";
+        echo 'rocket.phar ' . self::VERSION . PHP_EOL;
+        echo PHP_EOL;
         echo "Usage:\n";
-        echo "  php ./rocket.phar [options]\n";
-        echo "\n";
+        echo "  ./rocket.phar [options]\n";
+        echo PHP_EOL;
         echo "Options:\n";
-        echo "  -h, --help                                      show this help message and exit\n";
-        echo "  -c, --config {file name}                        configure file name\n";
-        echo "  -g, --git [pull]                                git  \n";
-        echo "  -s, --sync [dry|confirm|force]                  rsync\n";
-        echo "  -i, --init [plain|cakephp3|eccube4|wordpress]   print default configure file\n";
-        echo "  -n, --notify-test                               notification test\n";
-        echo "  -u, --upgrade                                   upgrade\n";
-        echo "      --unzip {path}                              using zip command on upgrade\n";
-        echo "  -v, --verify                                    verify configure\n";
+        echo "  -c, --config {file name}                        Configuration file name as JSON\n";
+        echo "  -g, --git [pull]                                Git operation\n";
+        echo "  -h, --help                                      Display this help message\n";
+        echo "  -i, --init [plain|cakephp3|eccube4|wordpress]   Print sample configuration file\n";
+        echo "  -n, --notify-test                               Slack notification test\n";
+        echo "      --no-color                                  Without color\n";
+        echo "  -s, --sync [dry|confirm|force]                  Rsync operation\n";
+        echo "  -u, --upgrade                                   Download new version file\n";
+        echo "      --unzip {path}                              Using zip command on upgrade\n";
+        echo "  -v, --verify                                    Verify configuration file\n";
     }
 
     /**
-     * @var string $target
+     * @var string $template
      */
     private function printConfig($template)
     {
         if ($template === 'cakephp3') {
-            echo file_get_contents(__DIR__ . '/config/cakephp3.json');
-            echo "\n";
+            echo file_get_contents(__DIR__ . '/config/cakephp3.json') . PHP_EOL;
             return;
         }
         if ($template === 'eccube4') {
-            echo file_get_contents(__DIR__ . '/config/eccube4.json');
-            echo "\n";
+            echo file_get_contents(__DIR__ . '/config/eccube4.json') . PHP_EOL;
             return;
         }
         if ($template === 'wordpress') {
-            echo file_get_contents(__DIR__ . '/config/wordpress.json');
-            echo "\n";
+            echo file_get_contents(__DIR__ . '/config/wordpress.json') . PHP_EOL;
             return;
         }
 
-        echo file_get_contents(__DIR__ . '/config/plain.json');
-        echo "\n";
+        echo file_get_contents(__DIR__ . '/config/plain.json') . PHP_EOL;
     }
 
-    /**
-     *
-     */
     private function printUsage()
     {
-        $this->printWarning('usage: php ./rocket.phar --config ./rocket.json --git [pull] --sync [dry|confirm|force]');
+        $this->printWarning('Usage: php ./rocket.phar --config ./rocket.json --git [pull] --sync [dry|confirm|force]');
     }
 
-    /**
-     *
-     */
     private function printInit()
     {
-        $this->printWarning('usage: php ./rocket.phar --init > ./rocket.json');
+        $this->printWarning('Usage: php ./rocket.phar --init > ./rocket.json');
     }
 
     /**
@@ -424,34 +422,47 @@ class Main
      */
     private function printError($reason)
     {
-        echo Color::text('red', 'rocket.phar: ' . $reason);
-        echo "\n";
+        $string = self::appName() . ': ' . $reason;
+        if ($this->options->hasNoColor()) {
+            echo $string . PHP_EOL;
+        } else {
+            echo Color::text('red', $string) . PHP_EOL;
+        }
     }
 
     /**
-     * @param $text
+     * @param string $text
      */
     private function printWarning($text)
     {
-        echo Color::text('purple', $text);
-        echo "\n";
+        if ($this->options->hasNoColor()) {
+            echo $text . PHP_EOL;
+        } else {
+            echo Color::text('purple', $text) . PHP_EOL;
+        }
     }
 
     /**
-     * @param $text
+     * @param string $text
      */
     private function printInfo($text)
     {
-        echo Color::text('cyan', $text);
-        echo "\n";
+        if ($this->options->hasNoColor()) {
+            echo $text . PHP_EOL;
+        } else {
+            echo Color::text('cyan', $text) . PHP_EOL;
+        }
     }
 
     /**
-     * @param $text
+     * @param string $text
      */
     private function printDebug($text)
     {
-        echo Color::bg_text('black', 'bg-white', $text);
-        echo "\n";
+        if ($this->options->hasNoColor()) {
+            echo $text . PHP_EOL;
+        } else {
+            echo Color::bg_text('black', 'bg-white', $text) . PHP_EOL;
+        }
     }
 }

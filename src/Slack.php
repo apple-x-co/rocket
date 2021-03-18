@@ -107,7 +107,7 @@ class Slack
                         new SlackBlock\ContextElement('mrkdwn', 'Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        new SlackBlock\ContextElement('mrkdwn', 'Version: ' . Main::VERSION)
+                        new SlackBlock\ContextElement('mrkdwn', 'Version: ' . Main::appName() . ' ' . Main::VERSION)
                     )
             );
 
