@@ -23,7 +23,8 @@ class Options
             'notify-test',
             'upgrade',
             'verify',
-            'debug'
+            'debug',
+            'no-color'
         ]);
 
         $this->options = $options;
@@ -160,5 +161,13 @@ class Options
     public function hasDebug()
     {
         return $this->has('debug');
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasNoColor()
+    {
+        return $this->has('no-color');
     }
 }
