@@ -3,33 +3,36 @@
 namespace Rocket;
 
 use Closure;
-use Exception;
+use RuntimeException;
 
 class Configure
 {
     const VERSION = '1.0';
 
     /** @var array  */
-    private $config = [];
+    private $config;
+
+    /** @var string */
+    private $config_path;
 
     /**
-     * Config constructor.
+     * @param string $config_path
      *
-     * @param $file_path
-     *
-     * @throws Exception
+     * @throws RuntimeException
      */
     public function __construct($config_path)
     {
+        $this->config_path = $config_path;
+
         $config = json_decode(file_get_contents($config_path), true);
         if ($config === false) {
-            throw new \Exception('config format error.');
+            throw new RuntimeException('config format error.');
         }
 
         $this->config = $config;
 
         if ($this->read('version') !== self::VERSION) {
-            throw new \Exception('not supported version.');
+            throw new RuntimeException('not supported version.');
         }
     }
 
@@ -42,7 +45,7 @@ class Configure
 
         try {
             $instance = new static($config_path);
-        } catch (\Exception $e) {
+        } catch (RuntimeException $e) {
             $valid = false;
         }
 
@@ -58,6 +61,14 @@ class Configure
     public function read($key, $default = null)
     {
         return $this->get_array($key, $default);
+    }
+
+    /**
+     * @return string
+     */
+    public function getConfigPath()
+    {
+        return $this->config_path;
     }
 
     /**
