@@ -216,7 +216,7 @@ class Main
                             $this->printError($command->getOutputString());
                         }
 
-                        echo "Do you want to synchronize? [y/N]\n";
+                        echo 'Do you want to synchronize? [y/N]' . PHP_EOL;
                         if (trim(fgets(STDIN)) === 'y') {
                             $_command->execute();
                             if ($_command->isSuccess()) {
@@ -277,10 +277,10 @@ class Main
                 ->addBlock(
                     \Rocket\SlackBlock\Section::fields()
                         ->addField(
-                            new \Rocket\SlackBlock\SectionField('mrkdwn', "*Hostname:*\n" . gethostname())
+                            new \Rocket\SlackBlock\SectionField('mrkdwn', '*Hostname:*' . PHP_EOL . gethostname())
                         )
                         ->addField(
-                            new \Rocket\SlackBlock\SectionField('mrkdwn', "*URL:*\n" . $configure->read('url'))
+                            new \Rocket\SlackBlock\SectionField('mrkdwn', '*URL:*' . PHP_EOL . $configure->read('url'))
                         )
                 );
 
@@ -388,20 +388,20 @@ class Main
     {
         echo 'rocket.phar ' . self::VERSION . PHP_EOL;
         echo PHP_EOL;
-        echo "Usage:\n";
-        echo "  ./rocket.phar [options]\n";
+        echo 'Usage:' . PHP_EOL;
+        echo './rocket.phar [options]' . PHP_EOL;
         echo PHP_EOL;
-        echo "Options:\n";
-        echo "  -c, --config {file name}                        Configuration file name as JSON\n";
-        echo "  -g, --git [pull]                                Git operation\n";
-        echo "  -h, --help                                      Display this help message\n";
-        echo "  -i, --init [plain|cakephp3|eccube4|wordpress]   Print sample configuration file\n";
-        echo "  -n, --notify-test                               Slack notification test\n";
-        echo "      --no-color                                  Without color\n";
-        echo "  -s, --sync [dry|confirm|force]                  Rsync operation\n";
-        echo "  -u, --upgrade                                   Download new version file\n";
-        echo "      --unzip {path}                              Using zip command on upgrade\n";
-        echo "  -v, --verify                                    Verify configuration file\n";
+        echo 'Options:' . PHP_EOL;
+        echo '  -c, --config {file name}                        Configuration file name as JSON' . PHP_EOL;
+        echo '  -g, --git [pull]                                Git operation' . PHP_EOL;
+        echo '  -h, --help                                      Display this help message' . PHP_EOL;
+        echo '  -i, --init [plain|cakephp3|eccube4|wordpress]   Print sample configuration file' . PHP_EOL;
+        echo '  -n, --notify-test                               Slack notification test' . PHP_EOL;
+        echo '      --no-color                                  Without color' . PHP_EOL;
+        echo '  -s, --sync [dry|confirm|force]                  Rsync operation' . PHP_EOL;
+        echo '  -u, --upgrade                                   Download new version file' . PHP_EOL;
+        echo '      --unzip {path}                              Using zip command on upgrade' . PHP_EOL;
+        echo '  -v, --verify                                    Verify configuration file' . PHP_EOL;
     }
 
     /**
@@ -427,12 +427,12 @@ class Main
 
     private function printUsage()
     {
-        $this->printWarning('Usage: php ./rocket.phar --config ./rocket.json --git [pull] --sync [dry|confirm|force]');
+        $this->printWarning('Usage: ./rocket.phar --config ./rocket.json --git [pull] --sync [dry|confirm|force]');
     }
 
     private function printInit()
     {
-        $this->printWarning('Usage: php ./rocket.phar --init > ./rocket.json');
+        $this->printWarning('Usage: ./rocket.phar --init > ./rocket.json');
     }
 
     /**
