@@ -28,9 +28,11 @@ class Slack
     }
 
     /**
-     * @return bool
+     * @param array{channel: string, username: string, icon_emoji: string, blocks: array} $data
+     *
+     * @return SlackIncomingResult
      */
-    private function _send($data)
+    private function sendMessage($data)
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->url);
@@ -46,13 +48,17 @@ class Slack
         $result = curl_exec($ch);
         curl_close($ch);
 
-        return $result === 'ok';
+        if ($result === 'ok') {
+            return new SlackIncomingResult(true);
+        }
+
+        return new SlackIncomingResult(false, $result);
     }
 
     /**
      * @param array|SlackBlock $data
      *
-     * @return bool
+     * @return SlackIncomingResult
      */
     public function send($data)
     {
@@ -65,20 +71,20 @@ class Slack
             ];
         }
 
-        return $this->_send($data);
+        return $this->sendMessage($data);
     }
 
     /**
      * @param Configure $configure
      *
-     * @return bool
+     * @return SlackIncomingResult
      */
     public function test($configure)
     {
         $slackBlock = new SlackBlock();
         $slackBlock
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('plain_text', get_current_user() . ' was deployed.')
+                \Rocket\SlackBlock\Section::text('plain_text', get_current_user() . ' was deployed :simple_smile:')
             )
             ->addBlock(
                 \Rocket\SlackBlock\Section::fields()
@@ -93,10 +99,16 @@ class Slack
                 new SlackBlock\Divider()
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('mrkdwn', "*Git pull*\n```HELLO WORLD```")
+                \Rocket\SlackBlock\Section::text('mrkdwn', '*Git pull*')
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('mrkdwn', "*Rsync*\n```HELLO WORLD```")
+                \Rocket\SlackBlock\Section::text('mrkdwn', '```HELLO WORLD```')
+            )
+            ->addBlock(
+                \Rocket\SlackBlock\Section::text('mrkdwn', '*Rsync*')
+            )
+            ->addBlock(
+                \Rocket\SlackBlock\Section::text('mrkdwn', '```HELLO WORLD```')
             )
             ->addBlock(
                 new SlackBlock\Divider()
@@ -109,15 +121,12 @@ class Slack
                     ->addElement(
                         new SlackBlock\ContextElement('mrkdwn', 'Version: ' . Main::appName() . ' ' . Main::VERSION)
                     )
-            )
-            ->addBlock(
-                (new \Rocket\SlackBlock\Context())
                     ->addElement(
                         new SlackBlock\ContextElement('mrkdwn', 'Configuration: ' . $configure->getConfigPath())
                     )
             );
 
-        return $this->_send([
+        return $this->sendMessage([
             'channel'    => $this->channel,
             'username'   => $this->username,
             'icon_emoji' => ':rocket:',

@@ -74,7 +74,10 @@ class Main
                 $configure->read('slack.channel'),
                 $configure->read('slack.username')
             );
-            $slack->test($configure);
+            $slackResult = $slack->test($configure);
+            if (! $slackResult->isOk()) {
+                $this->printError($slackResult->getError());
+            }
             return;
         }
 
@@ -269,7 +272,7 @@ class Main
             $slackBlock = new SlackBlock();
             $slackBlock
                 ->addBlock(
-                    \Rocket\SlackBlock\Section::text('plain_text', get_current_user() . ' was deployed.')
+                    \Rocket\SlackBlock\Section::text('plain_text', get_current_user() . ' was deployed :simple_smile:')
                 )
                 ->addBlock(
                     \Rocket\SlackBlock\Section::fields()
@@ -288,8 +291,16 @@ class Main
                         new SlackBlock\Divider()
                     )
                     ->addBlock(
-                        \Rocket\SlackBlock\Section::text('mrkdwn', "*Git pull*\n```$git_pull_log```")
+                        \Rocket\SlackBlock\Section::text('mrkdwn', '*Git pull*')
                     );
+
+                $chunks = str_split($git_pull_log, SlackBlock::MAX_LENGTH - 6);
+                foreach ($chunks as $chunk) {
+                    $slackBlock
+                        ->addBlock(
+                            \Rocket\SlackBlock\Section::text('mrkdwn', '```' . $chunk . '```')
+                        );
+                }
             }
             if ($sync_log !== null) {
                 $slackBlock
@@ -297,8 +308,16 @@ class Main
                         new SlackBlock\Divider()
                     )
                     ->addBlock(
-                        \Rocket\SlackBlock\Section::text('mrkdwn', "*Rsync*\n```$sync_log```")
+                        \Rocket\SlackBlock\Section::text('mrkdwn', '*Rsync*')
                     );
+
+                $chunks = str_split($sync_log, SlackBlock::MAX_LENGTH - 6);
+                foreach ($chunks as $chunk) {
+                    $slackBlock
+                        ->addBlock(
+                            \Rocket\SlackBlock\Section::text('mrkdwn', '```' . $chunk . '```')
+                        );
+                }
             }
 
             $slackBlock
@@ -313,9 +332,6 @@ class Main
                         ->addElement(
                             new SlackBlock\ContextElement('mrkdwn', 'Version: ' . self::appName() . ' ' . self::VERSION)
                         )
-                )
-                ->addBlock(
-                    (new \Rocket\SlackBlock\Context())
                         ->addElement(
                             new SlackBlock\ContextElement('mrkdwn', 'Configuration: ' . $configure->getConfigPath())
                         )
@@ -326,7 +342,10 @@ class Main
                 $configure->read('slack.channel'),
                 $configure->read('slack.username')
             );
-            $slack->send($slackBlock);
+            $slackResult = $slack->send($slackBlock);
+            if (! $slackResult->isOk()) {
+                $this->printError($slackResult->getError());
+            }
         }
     }
 
