@@ -1,45 +1,48 @@
 # rocket
 
-## How to
+## Requirement
+
+* PHP 5.6+
+
+## Installation
 
 ```bash
-# print rocket.json
-php ./rocket.phar --init > ./rocket.json
+wget https://github.com/apple-x-co/rocket/releases/download/0.1.7/rocket.phar
+chmod u+x rocket.phar
+./rocket.phar --init > ./rocket.json
 ```
 
 ```bash
 # notification test
-php ./rocket.phar --rocket ./rocket.json --notify-test
+./rocket.phar --rocket ./rocket.json --notify-test
 
 # verify rocket.json
-php ./rocket.phar --rocket ./rocket.json --verify
+./rocket.phar --rocket ./rocket.json --verify
 ```
+
+## Update
+
+```bash
+./rocket.phar --upgrade
+```
+
+## Usage
 
 ```bash
 # dry run (default)
-php ./rocket.phar --rocket ./rocket.json --sync dry
+./rocket.phar --rocket ./rocket.json --sync dry
 
 # git pull & sync confirm
-php ./rocket.phar --rocket ./rocket.json --git pull --sync confirm
+./rocket.phar --rocket ./rocket.json --git pull --sync confirm
 
 # git pull & sync force (crontab)
-php ./rocket.phar --rocket ./rocket.json --git pull --sync force
+./rocket.phar --rocket ./rocket.json --git pull --sync force
 
 # not git
-php ./rocket.phar --rocket ./rocket.json --sync confirm
+./rocket.phar --rocket ./rocket.json --sync confirm
 ```
 
-```bash
-# upgrade
-php ./rocket.phar --upgrade
-
-# upgrade (no ZipArchive)
-php ./rocket.phar --upgrade --unzip /usr/bin/unzip
-```
-
-## Development
-
-### Build
+## Build phar file
 
 ```bash
 composer run-script build
