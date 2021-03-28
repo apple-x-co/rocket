@@ -13,11 +13,11 @@ chmod u+x rocket.phar
 ```
 
 ```bash
-# notification test
-./rocket.phar --rocket ./rocket.json --notify-test
+# slack notification test
+./rocket.phar --config ./rocket.json --notify-test
 
 # verify rocket.json
-./rocket.phar --rocket ./rocket.json --verify
+./rocket.phar --config ./rocket.json --verify
 ```
 
 ## Update
@@ -30,16 +30,16 @@ chmod u+x rocket.phar
 
 ```bash
 # dry run (default)
-./rocket.phar --rocket ./rocket.json --sync dry
+./rocket.phar --config ./rocket.json --sync dry
 
 # git pull & sync confirm
-./rocket.phar --rocket ./rocket.json --git pull --sync confirm
+./rocket.phar --config ./rocket.json --git pull --sync confirm
 
 # git pull & sync force (crontab)
-./rocket.phar --rocket ./rocket.json --git pull --sync force
+./rocket.phar --config ./rocket.json --git pull --sync force
 
 # not git
-./rocket.phar --rocket ./rocket.json --sync confirm
+./rocket.phar --config ./rocket.json --sync confirm
 ```
 
 ## Build phar file
