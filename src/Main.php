@@ -3,10 +3,16 @@
 namespace Rocket;
 
 use Phar;
+use Rocket\SlackBlock\Context as SlackBlockContext;
+use Rocket\SlackBlock\ContextElement as SlackBlockContextElement;
+use Rocket\SlackBlock\Divider as SlackBlockDivider;
+use Rocket\SlackBlock\Header as SlackBlockHeader;
+use Rocket\SlackBlock\Section as SlackBlockSection;
+use Rocket\SlackBlock\SectionField as SlackBlockSectionField;
 
 class Main
 {
-    const VERSION = '0.1.6';
+    const VERSION = '0.1.7';
 
     /** @var Options */
     private $options = null;
@@ -272,68 +278,70 @@ class Main
             $slackBlock = new SlackBlock();
             $slackBlock
                 ->addBlock(
-                    \Rocket\SlackBlock\Section::text('plain_text', get_current_user() . ' was deployed :simple_smile:')
+                    new SlackBlockHeader('Deploy successful')
                 )
                 ->addBlock(
-                    \Rocket\SlackBlock\Section::fields()
+                    SlackBlockSection::plain_text(get_current_user() . ' was deployed :simple_smile:')
+                )
+                ->addBlock(
+                    SlackBlockSection::fields()
                         ->addField(
-                            new \Rocket\SlackBlock\SectionField('mrkdwn', '*Hostname:*' . PHP_EOL . gethostname())
+                            SlackBlockSectionField::markdown('*Hostname:*' . PHP_EOL . gethostname())
                         )
                         ->addField(
-                            new \Rocket\SlackBlock\SectionField('mrkdwn', '*URL:*' . PHP_EOL . $configure->read('url'))
+                            SlackBlockSectionField::markdown('*URL:*' . PHP_EOL . $configure->read('url'))
                         )
                 );
-
 
             if ($git_pull_log !== null) {
                 $slackBlock
                     ->addBlock(
-                        new SlackBlock\Divider()
+                        new SlackBlockDivider()
                     )
                     ->addBlock(
-                        \Rocket\SlackBlock\Section::text('mrkdwn', '*Git pull*')
+                        SlackBlockSection::bold('Git pull')
                     );
 
                 $chunks = str_split($git_pull_log, SlackBlock::MAX_LENGTH - 6);
                 foreach ($chunks as $chunk) {
                     $slackBlock
                         ->addBlock(
-                            \Rocket\SlackBlock\Section::text('mrkdwn', '```' . $chunk . '```')
+                            SlackBlockSection::code_block($chunk)
                         );
                 }
             }
             if ($sync_log !== null) {
                 $slackBlock
                     ->addBlock(
-                        new SlackBlock\Divider()
+                        new SlackBlockDivider()
                     )
                     ->addBlock(
-                        \Rocket\SlackBlock\Section::text('mrkdwn', '*Rsync*')
+                        SlackBlockSection::bold('Rsync')
                     );
 
                 $chunks = str_split($sync_log, SlackBlock::MAX_LENGTH - 6);
                 foreach ($chunks as $chunk) {
                     $slackBlock
                         ->addBlock(
-                            \Rocket\SlackBlock\Section::text('mrkdwn', '```' . $chunk . '```')
+                            SlackBlockSection::code_block($chunk)
                         );
                 }
             }
 
             $slackBlock
                 ->addBlock(
-                    new SlackBlock\Divider()
+                    new SlackBlockDivider()
                 )
                 ->addBlock(
-                    (new \Rocket\SlackBlock\Context())
+                    (new SlackBlockContext())
                         ->addElement(
-                            new SlackBlock\ContextElement('mrkdwn', 'Date: ' . date('Y/m/d H:i:s'))
+                            SlackBlockContextElement::markdown('Date: ' . date('Y/m/d H:i:s'))
                         )
                         ->addElement(
-                            new SlackBlock\ContextElement('mrkdwn', 'Version: ' . self::appName() . ' ' . self::VERSION)
+                            SlackBlockContextElement::markdown('Version: ' . self::appName() . ' ' . self::VERSION)
                         )
                         ->addElement(
-                            new SlackBlock\ContextElement('mrkdwn', 'Configuration: ' . $configure->getConfigPath())
+                            SlackBlockContextElement::markdown('Configuration: ' . $configure->getConfigPath())
                         )
                 );
 

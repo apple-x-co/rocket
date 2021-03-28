@@ -2,6 +2,14 @@
 
 namespace Rocket;
 
+use Rocket\SlackBlock\Context;
+use Rocket\SlackBlock\ContextElement;
+use Rocket\SlackBlock\Divider;
+use Rocket\SlackBlock\Header;
+use Rocket\SlackBlock\Image;
+use Rocket\SlackBlock\Section;
+use Rocket\SlackBlock\SectionField;
+
 class Slack
 {
     /** @var string */
@@ -84,45 +92,51 @@ class Slack
         $slackBlock = new SlackBlock();
         $slackBlock
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('plain_text', get_current_user() . ' was deployed :simple_smile:')
+                new Header('This is a test')
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::fields()
+                new Image('https://picsum.photos/600/100', 'sample')
+            )
+            ->addBlock(
+                Section::plain_text(get_current_user() . ' was deployed :simple_smile:')
+            )
+            ->addBlock(
+                Section::fields()
                     ->addField(
-                        new \Rocket\SlackBlock\SectionField('mrkdwn', "*Hostname:*\n" . gethostname())
+                        SectionField::markdown('*Hostname:*' . PHP_EOL . gethostname())
                     )
                     ->addField(
-                        new \Rocket\SlackBlock\SectionField('mrkdwn', "*URL:*\n" . $configure->read('url'))
+                        SectionField::markdown('*URL:*' . PHP_EOL . $configure->read('url'))
                     )
             )
             ->addBlock(
-                new SlackBlock\Divider()
+                new Divider()
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('mrkdwn', '*Git pull*')
+                Section::bold('Git pull')
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('mrkdwn', '```HELLO WORLD```')
+                Section::code_block('HELLO WORLD')
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('mrkdwn', '*Rsync*')
+                Section::bold('Rsync')
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('mrkdwn', '```HELLO WORLD```')
+                Section::code_block('HELLO WORLD')
             )
             ->addBlock(
-                new SlackBlock\Divider()
+                new Divider()
             )
             ->addBlock(
-                (new \Rocket\SlackBlock\Context())
+                (new Context())
                     ->addElement(
-                        new SlackBlock\ContextElement('mrkdwn', 'Date: ' . date("Y/m/d H:i:s"))
+                        ContextElement::markdown('Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        new SlackBlock\ContextElement('mrkdwn', 'Version: ' . Main::appName() . ' ' . Main::VERSION)
+                        ContextElement::markdown('Version: ' . Main::appName() . ' ' . Main::VERSION)
                     )
                     ->addElement(
-                        new SlackBlock\ContextElement('mrkdwn', 'Configuration: ' . $configure->getConfigPath())
+                        ContextElement::markdown('Configuration: ' . $configure->getConfigPath())
                     )
             );
 
