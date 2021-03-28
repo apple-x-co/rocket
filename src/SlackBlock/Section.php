@@ -20,8 +20,8 @@ class Section implements SlackBlockInterface
     private $fields = [];
 
     /**
-     * @param $type
-     * @param $text
+     * @param string $type
+     * @param string $text
      *
      * @return Section
      */
@@ -33,6 +33,46 @@ class Section implements SlackBlockInterface
         $instance->text = $text;
 
         return $instance;
+    }
+
+    /**
+     * @param string $text
+     *
+     * @return Section
+     */
+    public static function plain_text($text)
+    {
+        return self::text('plain_text', $text);
+    }
+
+    /**
+     * @param string $text
+     *
+     * @return Section
+     */
+    public static function markdown($text)
+    {
+        return self::text('mrkdwn', $text);
+    }
+
+    /**
+     * @param string $text
+     *
+     * @return Section
+     */
+    public static function bold($text)
+    {
+        return self::text('mrkdwn', '*' . $text . '*');
+    }
+
+    /**
+     * @param string $text
+     *
+     * @return Section
+     */
+    public static function code_block($text)
+    {
+        return self::text('mrkdwn', '```' . $text . '```');
     }
 
     /**

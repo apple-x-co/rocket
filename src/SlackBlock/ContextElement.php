@@ -25,7 +25,38 @@ class ContextElement implements SlackBlockInterface
     }
 
     /**
-     * @return array
+     * @param string $type
+     * @param string $text
+     *
+     * @return ContextElement
+     */
+    private static function text($type, $text)
+    {
+        return new static($type, $text);
+    }
+
+    /**
+     * @param string $text
+     *
+     * @return ContextElement
+     */
+    public static function plain_text($text)
+    {
+        return self::text('plain_text', $text);
+    }
+
+    /**
+     * @param string $text
+     *
+     * @return ContextElement
+     */
+    public static function markdown($text)
+    {
+        return self::text('mrkdwn', $text);
+    }
+
+    /**
+     * @return array{type: string, text: string}
      */
     public function build()
     {

@@ -25,6 +25,37 @@ class SectionField implements SlackBlockInterface
     }
 
     /**
+     * @param string $type
+     * @param string $text
+     *
+     * @return SectionField
+     */
+    private static function text($type, $text)
+    {
+        return new static($type, $text);
+    }
+
+    /**
+     * @param string $text
+     *
+     * @return SectionField
+     */
+    public static function plain_text($text)
+    {
+        return self::text('plain_text', $text);
+    }
+
+    /**
+     * @param string $text
+     *
+     * @return SectionField
+     */
+    public static function markdown($text)
+    {
+        return self::text('mrkdwn', $text);
+    }
+
+    /**
      * @return array
      */
     public function build()

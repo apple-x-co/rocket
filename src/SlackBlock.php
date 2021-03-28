@@ -4,6 +4,8 @@ namespace Rocket;
 
 class SlackBlock implements SlackBlockInterface
 {
+    const MAX_LENGTH = 3000;
+
     private $blocks = [];
 
     /**

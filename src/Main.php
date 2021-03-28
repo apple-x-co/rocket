@@ -3,10 +3,16 @@
 namespace Rocket;
 
 use Phar;
+use Rocket\SlackBlock\Context as SlackBlockContext;
+use Rocket\SlackBlock\ContextElement as SlackBlockContextElement;
+use Rocket\SlackBlock\Divider as SlackBlockDivider;
+use Rocket\SlackBlock\Header as SlackBlockHeader;
+use Rocket\SlackBlock\Section as SlackBlockSection;
+use Rocket\SlackBlock\SectionField as SlackBlockSectionField;
 
 class Main
 {
-    const VERSION = '0.1.6';
+    const VERSION = '0.1.7';
 
     /** @var Options */
     private $options = null;
@@ -74,7 +80,10 @@ class Main
                 $configure->read('slack.channel'),
                 $configure->read('slack.username')
             );
-            $slack->test($configure);
+            $slackResult = $slack->test($configure);
+            if (! $slackResult->isOk()) {
+                $this->printError($slackResult->getError());
+            }
             return;
         }
 
@@ -213,7 +222,7 @@ class Main
                             $this->printError($command->getOutputString());
                         }
 
-                        echo "Do you want to synchronize? [y/N]\n";
+                        echo 'Do you want to synchronize? [y/N]' . PHP_EOL;
                         if (trim(fgets(STDIN)) === 'y') {
                             $_command->execute();
                             if ($_command->isSuccess()) {
@@ -269,55 +278,70 @@ class Main
             $slackBlock = new SlackBlock();
             $slackBlock
                 ->addBlock(
-                    \Rocket\SlackBlock\Section::text('plain_text', get_current_user() . ' was deployed.')
+                    new SlackBlockHeader('Deploy successful')
                 )
                 ->addBlock(
-                    \Rocket\SlackBlock\Section::fields()
+                    SlackBlockSection::plain_text(get_current_user() . ' was deployed :simple_smile:')
+                )
+                ->addBlock(
+                    SlackBlockSection::fields()
                         ->addField(
-                            new \Rocket\SlackBlock\SectionField('mrkdwn', "*Hostname:*\n" . gethostname())
+                            SlackBlockSectionField::markdown('*Hostname:*' . PHP_EOL . gethostname())
                         )
                         ->addField(
-                            new \Rocket\SlackBlock\SectionField('mrkdwn', "*URL:*\n" . $configure->read('url'))
+                            SlackBlockSectionField::markdown('*URL:*' . PHP_EOL . $configure->read('url'))
                         )
                 );
-
 
             if ($git_pull_log !== null) {
                 $slackBlock
                     ->addBlock(
-                        new SlackBlock\Divider()
+                        new SlackBlockDivider()
                     )
                     ->addBlock(
-                        \Rocket\SlackBlock\Section::text('mrkdwn', "*Git pull*\n```$git_pull_log```")
+                        SlackBlockSection::bold('Git pull')
                     );
+
+                $chunks = str_split($git_pull_log, SlackBlock::MAX_LENGTH - 6);
+                foreach ($chunks as $chunk) {
+                    $slackBlock
+                        ->addBlock(
+                            SlackBlockSection::code_block($chunk)
+                        );
+                }
             }
             if ($sync_log !== null) {
                 $slackBlock
                     ->addBlock(
-                        new SlackBlock\Divider()
+                        new SlackBlockDivider()
                     )
                     ->addBlock(
-                        \Rocket\SlackBlock\Section::text('mrkdwn', "*Rsync*\n```$sync_log```")
+                        SlackBlockSection::bold('Rsync')
                     );
+
+                $chunks = str_split($sync_log, SlackBlock::MAX_LENGTH - 6);
+                foreach ($chunks as $chunk) {
+                    $slackBlock
+                        ->addBlock(
+                            SlackBlockSection::code_block($chunk)
+                        );
+                }
             }
 
             $slackBlock
                 ->addBlock(
-                    new SlackBlock\Divider()
+                    new SlackBlockDivider()
                 )
                 ->addBlock(
-                    (new \Rocket\SlackBlock\Context())
+                    (new SlackBlockContext())
                         ->addElement(
-                            new SlackBlock\ContextElement('mrkdwn', 'Date: ' . date('Y/m/d H:i:s'))
+                            SlackBlockContextElement::markdown('Date: ' . date('Y/m/d H:i:s'))
                         )
                         ->addElement(
-                            new SlackBlock\ContextElement('mrkdwn', 'Version: ' . self::appName() . ' ' . self::VERSION)
+                            SlackBlockContextElement::markdown('Version: ' . self::appName() . ' ' . self::VERSION)
                         )
-                )
-                ->addBlock(
-                    (new \Rocket\SlackBlock\Context())
                         ->addElement(
-                            new SlackBlock\ContextElement('mrkdwn', 'Configuration: ' . $configure->getConfigPath())
+                            SlackBlockContextElement::markdown('Configuration: ' . $configure->getConfigPath())
                         )
                 );
 
@@ -326,7 +350,10 @@ class Main
                 $configure->read('slack.channel'),
                 $configure->read('slack.username')
             );
-            $slack->send($slackBlock);
+            $slackResult = $slack->send($slackBlock);
+            if (! $slackResult->isOk()) {
+                $this->printError($slackResult->getError());
+            }
         }
     }
 
@@ -369,20 +396,20 @@ class Main
     {
         echo 'rocket.phar ' . self::VERSION . PHP_EOL;
         echo PHP_EOL;
-        echo "Usage:\n";
-        echo "  ./rocket.phar [options]\n";
+        echo 'Usage:' . PHP_EOL;
+        echo './rocket.phar [options]' . PHP_EOL;
         echo PHP_EOL;
-        echo "Options:\n";
-        echo "  -c, --config {file name}                        Configuration file name as JSON\n";
-        echo "  -g, --git [pull]                                Git operation\n";
-        echo "  -h, --help                                      Display this help message\n";
-        echo "  -i, --init [plain|cakephp3|eccube4|wordpress]   Print sample configuration file\n";
-        echo "  -n, --notify-test                               Slack notification test\n";
-        echo "      --no-color                                  Without color\n";
-        echo "  -s, --sync [dry|confirm|force]                  Rsync operation\n";
-        echo "  -u, --upgrade                                   Download new version file\n";
-        echo "      --unzip {path}                              Using zip command on upgrade\n";
-        echo "  -v, --verify                                    Verify configuration file\n";
+        echo 'Options:' . PHP_EOL;
+        echo '  -c, --config {file name}                        Configuration file name as JSON' . PHP_EOL;
+        echo '  -g, --git [pull]                                Git operation' . PHP_EOL;
+        echo '  -h, --help                                      Display this help message' . PHP_EOL;
+        echo '  -i, --init [plain|cakephp3|eccube4|wordpress]   Print sample configuration file' . PHP_EOL;
+        echo '  -n, --notify-test                               Slack notification test' . PHP_EOL;
+        echo '      --no-color                                  Without color' . PHP_EOL;
+        echo '  -s, --sync [dry|confirm|force]                  Rsync operation' . PHP_EOL;
+        echo '  -u, --upgrade                                   Download new version file' . PHP_EOL;
+        echo '      --unzip {path}                              Using zip command on upgrade' . PHP_EOL;
+        echo '  -v, --verify                                    Verify configuration file' . PHP_EOL;
     }
 
     /**
@@ -408,12 +435,12 @@ class Main
 
     private function printUsage()
     {
-        $this->printWarning('Usage: php ./rocket.phar --config ./rocket.json --git [pull] --sync [dry|confirm|force]');
+        $this->printWarning('Usage: ./rocket.phar --config ./rocket.json --git [pull] --sync [dry|confirm|force]');
     }
 
     private function printInit()
     {
-        $this->printWarning('Usage: php ./rocket.phar --init > ./rocket.json');
+        $this->printWarning('Usage: ./rocket.phar --init > ./rocket.json');
     }
 
     /**

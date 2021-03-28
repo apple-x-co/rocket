@@ -2,6 +2,14 @@
 
 namespace Rocket;
 
+use Rocket\SlackBlock\Context;
+use Rocket\SlackBlock\ContextElement;
+use Rocket\SlackBlock\Divider;
+use Rocket\SlackBlock\Header;
+use Rocket\SlackBlock\Image;
+use Rocket\SlackBlock\Section;
+use Rocket\SlackBlock\SectionField;
+
 class Slack
 {
     /** @var string */
@@ -28,9 +36,11 @@ class Slack
     }
 
     /**
-     * @return bool
+     * @param array{channel: string, username: string, icon_emoji: string, blocks: array} $data
+     *
+     * @return SlackIncomingResult
      */
-    private function _send($data)
+    private function sendMessage($data)
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->url);
@@ -46,13 +56,17 @@ class Slack
         $result = curl_exec($ch);
         curl_close($ch);
 
-        return $result === 'ok';
+        if ($result === 'ok') {
+            return new SlackIncomingResult(true);
+        }
+
+        return new SlackIncomingResult(false, $result);
     }
 
     /**
      * @param array|SlackBlock $data
      *
-     * @return bool
+     * @return SlackIncomingResult
      */
     public function send($data)
     {
@@ -65,59 +79,68 @@ class Slack
             ];
         }
 
-        return $this->_send($data);
+        return $this->sendMessage($data);
     }
 
     /**
      * @param Configure $configure
      *
-     * @return bool
+     * @return SlackIncomingResult
      */
     public function test($configure)
     {
         $slackBlock = new SlackBlock();
         $slackBlock
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('plain_text', get_current_user() . ' was deployed.')
+                new Header('This is a test')
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::fields()
+                new Image('https://picsum.photos/600/100', 'sample')
+            )
+            ->addBlock(
+                Section::plain_text(get_current_user() . ' was deployed :simple_smile:')
+            )
+            ->addBlock(
+                Section::fields()
                     ->addField(
-                        new \Rocket\SlackBlock\SectionField('mrkdwn', "*Hostname:*\n" . gethostname())
+                        SectionField::markdown('*Hostname:*' . PHP_EOL . gethostname())
                     )
                     ->addField(
-                        new \Rocket\SlackBlock\SectionField('mrkdwn', "*URL:*\n" . $configure->read('url'))
+                        SectionField::markdown('*URL:*' . PHP_EOL . $configure->read('url'))
                     )
             )
             ->addBlock(
-                new SlackBlock\Divider()
+                new Divider()
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('mrkdwn', "*Git pull*\n```HELLO WORLD```")
+                Section::bold('Git pull')
             )
             ->addBlock(
-                \Rocket\SlackBlock\Section::text('mrkdwn', "*Rsync*\n```HELLO WORLD```")
+                Section::code_block('HELLO WORLD')
             )
             ->addBlock(
-                new SlackBlock\Divider()
+                Section::bold('Rsync')
             )
             ->addBlock(
-                (new \Rocket\SlackBlock\Context())
+                Section::code_block('HELLO WORLD')
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                (new Context())
                     ->addElement(
-                        new SlackBlock\ContextElement('mrkdwn', 'Date: ' . date("Y/m/d H:i:s"))
+                        ContextElement::markdown('Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        new SlackBlock\ContextElement('mrkdwn', 'Version: ' . Main::appName() . ' ' . Main::VERSION)
+                        ContextElement::markdown('Version: ' . Main::appName() . ' ' . Main::VERSION)
                     )
-            )
-            ->addBlock(
-                (new \Rocket\SlackBlock\Context())
                     ->addElement(
-                        new SlackBlock\ContextElement('mrkdwn', 'Configuration: ' . $configure->getConfigPath())
+                        ContextElement::markdown('Configuration: ' . $configure->getConfigPath())
                     )
             );
 
-        return $this->_send([
+        return $this->sendMessage([
             'channel'    => $this->channel,
             'username'   => $this->username,
             'icon_emoji' => ':rocket:',

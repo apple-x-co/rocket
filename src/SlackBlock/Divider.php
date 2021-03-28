@@ -7,7 +7,7 @@ use Rocket\SlackBlockInterface;
 class Divider implements SlackBlockInterface
 {
     /**
-     * @return array
+     * @return array{type: string}
      */
     public function build()
     {
