@@ -268,7 +268,7 @@ class Main
                             ->addArgument('--dry-run')
                             ->execute();
                         if ($command->isSuccess()) {
-                            $sync_log .= $command->getOutputString();
+                            //$sync_log .= $command->getOutputString();
                             $this->info('> rsync dry');
                             $this->info($command->getOutputString());
                         } else {
@@ -281,6 +281,7 @@ class Main
                         if (trim(fgets(STDIN)) === 'y') {
                             $_command->execute();
                             if ($_command->isSuccess()) {
+                                $sync_log .= $_command->getOutputString();
                                 $this->info('> rsync');
                                 $this->info($_command->getOutputString());
                             } else {
