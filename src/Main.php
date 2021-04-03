@@ -98,7 +98,7 @@ class Main
                 $message
                     ->addBlock(
                         (new SlackSection())
-                            ->addField(
+                            ->setText(
                                 new SlackMarkdownText('```' . $chunk . '```')
                             )
                     );
@@ -369,7 +369,7 @@ class Main
                     $message
                         ->addBlock(
                             (new SlackSection())
-                                ->addField(
+                                ->setText(
                                     new SlackMarkdownText('```' . $chunk . '```')
                                 )
                         );
@@ -393,7 +393,7 @@ class Main
                     $message
                         ->addBlock(
                             (new SlackSection())
-                                ->addField(
+                                ->setText(
                                     new SlackMarkdownText('```' . $chunk . '```')
                                 )
                         );
