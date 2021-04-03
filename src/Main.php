@@ -3,16 +3,18 @@
 namespace Rocket;
 
 use Phar;
-use Rocket\SlackBlock\Context as SlackBlockContext;
-use Rocket\SlackBlock\ContextElement as SlackBlockContextElement;
-use Rocket\SlackBlock\Divider as SlackBlockDivider;
-use Rocket\SlackBlock\Header as SlackBlockHeader;
-use Rocket\SlackBlock\Section as SlackBlockSection;
-use Rocket\SlackBlock\SectionField as SlackBlockSectionField;
+use Rocket\Slack\BlockKit\Block\Context as SlackContext;
+use Rocket\Slack\BlockKit\Block\Divider as SlackDivider;
+use Rocket\Slack\BlockKit\Block\Header as SlackHeader;
+use Rocket\Slack\BlockKit\Block\Section as SlackSection;
+use Rocket\Slack\BlockKit\Element\MarkdownText as SlackMarkdownText;
+use Rocket\Slack\BlockKit\Element\PlainText as SlackPlainText;
+use Rocket\Slack\BlockKit\Message;
+use Rocket\Slack\BlockKit\Message as SlackMessage;
 
 class Main
 {
-    const VERSION = '0.1.7';
+    const VERSION = '0.1.8';
 
     /** @var Options */
     private $options = null;
@@ -30,46 +32,92 @@ class Main
         // INIT
         if ($this->options->hasInit()) {
             $this->printConfig($this->options->getInit());
+
+            return;
+        }
+
+        // INFO
+        if ($this->options->hasInfo()) {
+            $this->printInfo();
+
             return;
         }
 
         // HELP
         if ($this->options->hasHelp()) {
             $this->printHelp();
+
             return;
         }
 
         // UPGRADE
         if ($this->options->hasUpgrade()) {
             $this->upgrade();
+
             return;
         }
 
         // CONFIGURE
         if (! $this->options->hasConfig()) {
             $this->printUsage();
+
             return;
         }
+
         $config_path = realpath($this->options->getConfig());
         if (! file_exists($config_path)) {
             $this->printInit();
+
             return;
         }
+
         if ($this->options->hasVerify()) {
             if (Configure::verify($config_path)) {
-                $this->printInfo($config_path . ': OK');
+                $this->info($config_path . ': OK');
             } else {
-                $this->printError($config_path . ': NG');
+                $this->error($config_path . ': NG');
             }
+
             return;
         }
 
         $configure = new Configure($config_path);
         $self = $this;
 
+        // NOTIFICATION
+        if ($this->options->hasNotify()) {
+            $lines = [];
+            while ($line = fgets(STDIN)) {
+                $lines[] = trim($line);
+            }
+
+            $message = new Message();
+
+            $chunks = str_split(implode(PHP_EOL, $lines), SlackSection::TEXT_MAX_LENGTH - 6);
+            foreach ($chunks as $chunk) {
+                $message
+                    ->addBlock(
+                        (new SlackSection())
+                            ->addField(
+                                new SlackMarkdownText('```' . $chunk . '```')
+                            )
+                    );
+            }
+
+            $slack = new Slack(
+                $configure->read('slack.incomingWebhook'),
+                $configure->read('slack.channel'),
+                $configure->read('slack.username')
+            );
+            $slack->send($message);
+
+            return;
+        }
+
         // USER CHECK
         if (posix_getpwuid(posix_geteuid())['name'] !== $configure->read('user')) {
-            $this->printError('can not executed user.');
+            $this->error('can not executed user.');
+
             return;
         }
 
@@ -82,8 +130,9 @@ class Main
             );
             $slackResult = $slack->test($configure);
             if (! $slackResult->isOk()) {
-                $this->printError($slackResult->getError());
+                $this->error($slackResult->getError());
             }
+
             return;
         }
 
@@ -93,6 +142,7 @@ class Main
             $directory_path = $configure->read('source.directory');
             if (! is_dir($directory_path)) {
                 $this->printNotfoundPath($directory_path);
+
                 return;
             }
 
@@ -107,18 +157,20 @@ class Main
                 ->setSubscribeEvent(CommandEvents::BEFORE_EXECUTION, function ($command) use ($self) {
                     /** @var Command $command */
                     if ($self->options->hasDebug()) {
-                        $self->printDebug('$ ' . $command->string());
+                        $self->debug('$ ' . $command->string());
                     }
                 })
                 ->execute();
             if ($command->isSuccess()) {
-                $this->printInfo('> ' . $command->string());
-                $this->printInfo($command->getOutputString());
+                $this->info('> ' . $command->string());
+                $this->info($command->getOutputString());
             } else {
-                $this->printInfo('> ' . $command->string());
-                $this->printError($command->getOutputString());
+                $this->info('> ' . $command->string());
+                $this->error($command->getOutputString());
+
                 return;
             }
+
             if (strpos($command->getOutputString(), 'local out of date') === false) {
                 return;
             }
@@ -133,17 +185,18 @@ class Main
                 ->setSubscribeEvent(CommandEvents::BEFORE_EXECUTION, function ($command) use ($self) {
                     /** @var Command $command */
                     if ($self->options->hasDebug()) {
-                        $self->printDebug('$ ' . $command->string());
+                        $self->debug('$ ' . $command->string());
                     }
                 })
                 ->execute();
 
             if ($command->isSuccess()) {
-                $this->printInfo('> ' . $command->string());
-                $this->printInfo($command->getOutputString());
+                $this->info('> ' . $command->string());
+                $this->info($command->getOutputString());
             } else {
-                $this->printError('> ' . $command->string());
-                $this->printError($command->getOutputString());
+                $this->error('> ' . $command->string());
+                $this->error($command->getOutputString());
+
                 return;
             }
 
@@ -170,7 +223,7 @@ class Main
                     ->setSubscribeEvent(CommandEvents::BEFORE_EXECUTION, function ($command) use ($self) {
                         /** @var Command $command */
                         if ($self->options->hasDebug()) {
-                            $self->printDebug('$ ' . $command->string());
+                            $self->debug('$ ' . $command->string());
                         }
                     });
 
@@ -186,25 +239,27 @@ class Main
                             ->addArgument('--dry-run')
                             ->execute();
                         if ($command->isSuccess()) {
-                            $this->printInfo('> rsync dry');
-                            $this->printInfo($command->getOutputString());
+                            $this->info('> rsync dry');
+                            $this->info($command->getOutputString());
                         } else {
-                            $this->printError('> rsync');
-                            $this->printError($command->getOutputString());
+                            $this->error('> rsync');
+                            $this->error($command->getOutputString());
                         }
+
                         break;
                     case 'force':
                         $command
                             ->execute();
                         if ($command->isSuccess()) {
                             $sync_log .= $command->getOutputString();
-                            $this->printInfo('> rsync');
-                            $this->printInfo($command->getOutputString());
+                            $this->info('> rsync');
+                            $this->info($command->getOutputString());
                         } else {
                             $error = true;
-                            $this->printError('> rsync');
-                            $this->printError($command->getOutputString());
+                            $this->error('> rsync');
+                            $this->error($command->getOutputString());
                         }
+
                         break;
                     case 'confirm':
                         $_command = clone $command;
@@ -213,27 +268,29 @@ class Main
                             ->addArgument('--dry-run')
                             ->execute();
                         if ($command->isSuccess()) {
-                            $sync_log .= $command->getOutputString();
-                            $this->printInfo('> rsync dry');
-                            $this->printInfo($command->getOutputString());
+                            //$sync_log .= $command->getOutputString();
+                            $this->info('> rsync dry');
+                            $this->info($command->getOutputString());
                         } else {
                             $error = true;
-                            $this->printError('> rsync');
-                            $this->printError($command->getOutputString());
+                            $this->error('> rsync');
+                            $this->error($command->getOutputString());
                         }
 
                         echo 'Do you want to synchronize? [y/N]' . PHP_EOL;
                         if (trim(fgets(STDIN)) === 'y') {
                             $_command->execute();
                             if ($_command->isSuccess()) {
-                                $this->printInfo('> rsync');
-                                $this->printInfo($_command->getOutputString());
+                                $sync_log .= $_command->getOutputString();
+                                $this->info('> rsync');
+                                $this->info($_command->getOutputString());
                             } else {
                                 $error = true;
-                                $this->printError('> rsync');
-                                $this->printError($_command->getOutputString());
+                                $this->error('> rsync');
+                                $this->error($_command->getOutputString());
                             }
                         }
+
                         break;
                 }
 
@@ -259,15 +316,15 @@ class Main
                         ->setSubscribeEvent(CommandEvents::BEFORE_EXECUTION, function ($command) use ($self) {
                             /** @var Command $command */
                             if ($self->options->hasDebug()) {
-                                $self->printDebug('$ ' . $command->string());
+                                $self->debug('$ ' . $command->string());
                             }
                         })
                         ->execute();
 
                     if ($command->isSuccess()) {
-                        $this->printInfo($command->path() . ': ' . $command->getOutputString());
+                        $this->info($command->path() . ': ' . $command->getOutputString());
                     } else {
-                        $this->printError($command->getOutputString());
+                        $this->error($command->getOutputString());
                     }
                 }
             }
@@ -275,73 +332,88 @@ class Main
 
         // NOTIFICATION
         if ($is_file_changed) {
-            $slackBlock = new SlackBlock();
-            $slackBlock
+            $message = new SlackMessage();
+            $message
                 ->addBlock(
-                    new SlackBlockHeader('Deploy successful')
+                    new SlackHeader(new SlackPlainText('Deploy successful'))
                 )
                 ->addBlock(
-                    SlackBlockSection::plain_text(get_current_user() . ' was deployed :simple_smile:')
+                    (new SlackSection())->setText(
+                        new SlackPlainText(get_current_user() . ' was deployed :simple_smile:')
+                    )
                 )
                 ->addBlock(
-                    SlackBlockSection::fields()
+                    (new SlackSection())
                         ->addField(
-                            SlackBlockSectionField::markdown('*Hostname:*' . PHP_EOL . gethostname())
+                            new SlackMarkdownText('*Hostname:*' . PHP_EOL . gethostname())
                         )
                         ->addField(
-                            SlackBlockSectionField::markdown('*URL:*' . PHP_EOL . $configure->read('url'))
+                            new SlackMarkdownText('*URL:*' . PHP_EOL . $configure->read('url'))
                         )
                 );
 
             if ($git_pull_log !== null) {
-                $slackBlock
+                $message
                     ->addBlock(
-                        new SlackBlockDivider()
+                        new SlackDivider()
                     )
                     ->addBlock(
-                        SlackBlockSection::bold('Git pull')
+                        (new SlackSection())
+                            ->addField(
+                                new SlackMarkdownText('*Git pull*')
+                            )
                     );
 
-                $chunks = str_split($git_pull_log, SlackBlock::MAX_LENGTH - 6);
+                $chunks = str_split($git_pull_log, SlackSection::TEXT_MAX_LENGTH - 6);
                 foreach ($chunks as $chunk) {
-                    $slackBlock
+                    $message
                         ->addBlock(
-                            SlackBlockSection::code_block($chunk)
+                            (new SlackSection())
+                                ->addField(
+                                    new SlackMarkdownText('```' . $chunk . '```')
+                                )
                         );
                 }
             }
+
             if ($sync_log !== null) {
-                $slackBlock
+                $message
                     ->addBlock(
-                        new SlackBlockDivider()
+                        new SlackDivider()
                     )
                     ->addBlock(
-                        SlackBlockSection::bold('Rsync')
+                        (new SlackSection())
+                            ->addField(
+                                new SlackMarkdownText('*Rsync*')
+                            )
                     );
 
-                $chunks = str_split($sync_log, SlackBlock::MAX_LENGTH - 6);
+                $chunks = str_split($sync_log, SlackSection::TEXT_MAX_LENGTH - 6);
                 foreach ($chunks as $chunk) {
-                    $slackBlock
+                    $message
                         ->addBlock(
-                            SlackBlockSection::code_block($chunk)
+                            (new SlackSection())
+                                ->addField(
+                                    new SlackMarkdownText('```' . $chunk . '```')
+                                )
                         );
                 }
             }
 
-            $slackBlock
+            $message
                 ->addBlock(
-                    new SlackBlockDivider()
+                    new SlackDivider()
                 )
                 ->addBlock(
-                    (new SlackBlockContext())
+                    (new SlackContext())
                         ->addElement(
-                            SlackBlockContextElement::markdown('Date: ' . date('Y/m/d H:i:s'))
+                            new SlackMarkdownText('Date: ' . date("Y/m/d H:i:s"))
                         )
                         ->addElement(
-                            SlackBlockContextElement::markdown('Version: ' . self::appName() . ' ' . self::VERSION)
+                            new SlackMarkdownText('Version: ' . self::appName() . ' ' . self::VERSION)
                         )
                         ->addElement(
-                            SlackBlockContextElement::markdown('Configuration: ' . $configure->getConfigPath())
+                            new SlackMarkdownText('Configuration: ' . $configure->getConfigPath())
                         )
                 );
 
@@ -350,9 +422,9 @@ class Main
                 $configure->read('slack.channel'),
                 $configure->read('slack.username')
             );
-            $slackResult = $slack->send($slackBlock);
+            $slackResult = $slack->send($message);
             if (! $slackResult->isOk()) {
-                $this->printError($slackResult->getError());
+                $this->error($slackResult->getError());
             }
         }
     }
@@ -372,9 +444,11 @@ class Main
 
     private function upgrade()
     {
-        $working_directory_path = sys_get_temp_dir() . '/' . 'rocket-' . substr(str_shuffle('1234567890abcdefghijklmnopqrstuvwxyz'), 0, 8);
-        if ( ! mkdir($working_directory_path) && ! is_dir($working_directory_path)) {
-            $this->printError(sprintf('Directory "%s" was not created.', $working_directory_path));
+        $working_directory_path = sys_get_temp_dir() . '/' . 'rocket-' . substr(str_shuffle('1234567890abcdefghijklmnopqrstuvwxyz'),
+                0, 8);
+        if (! mkdir($working_directory_path) && ! is_dir($working_directory_path)) {
+            $this->error(sprintf('Directory "%s" was not created.', $working_directory_path));
+
             return;
         }
 
@@ -384,12 +458,22 @@ class Main
 
         $updater = new Updater($working_directory_path);
         $result = $updater->upgrade();
-        if ( ! $result->isOk()) {
-            $this->printError($result->getError());
+        if (! $result->isOk()) {
+            $this->error($result->getError());
+
             return;
         }
 
-        $this->printInfo('New version: ' . $result->getFilePath());
+        $this->info('New version: ' . $result->getFilePath());
+    }
+
+    private function printInfo()
+    {
+        echo 'OS:             ' . php_uname() . PHP_EOL;
+        echo 'PHP binary:     ' . PHP_BINARY . PHP_EOL;
+        echo 'PHP version:    ' . PHP_VERSION . PHP_EOL;
+        echo 'php.ini used:	' . php_ini_loaded_file() . PHP_EOL;
+        echo 'rocket version: ' . self::VERSION . PHP_EOL;
     }
 
     private function printHelp()
@@ -404,7 +488,8 @@ class Main
         echo '  -g, --git [pull]                                Git operation' . PHP_EOL;
         echo '  -h, --help                                      Display this help message' . PHP_EOL;
         echo '  -i, --init [plain|cakephp3|eccube4|wordpress]   Print sample configuration file' . PHP_EOL;
-        echo '  -n, --notify-test                               Slack notification test' . PHP_EOL;
+        echo '  -n, --notify                                    Simple slack notification' . PHP_EOL;
+        echo '      --notify-test                               Slack notification test' . PHP_EOL;
         echo '      --no-color                                  Without color' . PHP_EOL;
         echo '  -s, --sync [dry|confirm|force]                  Rsync operation' . PHP_EOL;
         echo '  -u, --upgrade                                   Download new version file' . PHP_EOL;
@@ -419,14 +504,19 @@ class Main
     {
         if ($template === 'cakephp3') {
             echo file_get_contents(__DIR__ . '/config/cakephp3.json') . PHP_EOL;
+
             return;
         }
+
         if ($template === 'eccube4') {
             echo file_get_contents(__DIR__ . '/config/eccube4.json') . PHP_EOL;
+
             return;
         }
+
         if ($template === 'wordpress') {
             echo file_get_contents(__DIR__ . '/config/wordpress.json') . PHP_EOL;
+
             return;
         }
 
@@ -435,12 +525,12 @@ class Main
 
     private function printUsage()
     {
-        $this->printWarning('Usage: ./rocket.phar --config ./rocket.json --git [pull] --sync [dry|confirm|force]');
+        $this->warning('Usage: ./rocket.phar --config ./rocket.json --git [pull] --sync [dry|confirm|force]');
     }
 
     private function printInit()
     {
-        $this->printWarning('Usage: ./rocket.phar --init > ./rocket.json');
+        $this->warning('Usage: ./rocket.phar --init > ./rocket.json');
     }
 
     /**
@@ -448,13 +538,13 @@ class Main
      */
     private function printNotfoundPath($path)
     {
-        $this->printError($path . ': No such file or directory');
+        $this->error($path . ': No such file or directory');
     }
 
     /**
      * @param string $reason
      */
-    private function printError($reason)
+    private function error($reason)
     {
         $string = self::appName() . ': ' . $reason;
         if ($this->options->hasNoColor()) {
@@ -467,7 +557,7 @@ class Main
     /**
      * @param string $text
      */
-    private function printWarning($text)
+    private function warning($text)
     {
         if ($this->options->hasNoColor()) {
             echo $text . PHP_EOL;
@@ -479,7 +569,7 @@ class Main
     /**
      * @param string $text
      */
-    private function printInfo($text)
+    private function info($text)
     {
         if ($this->options->hasNoColor()) {
             echo $text . PHP_EOL;
@@ -491,7 +581,7 @@ class Main
     /**
      * @param string $text
      */
-    private function printDebug($text)
+    private function debug($text)
     {
         if ($this->options->hasNoColor()) {
             echo $text . PHP_EOL;

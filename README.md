@@ -40,6 +40,9 @@ chmod u+x rocket.phar
 
 # not git
 ./rocket.phar --config ./rocket.json --sync confirm
+
+# notify
+cat example.txt | ./rocket.phar --config ./rocket.json --notify
 ```
 
 ## Build phar file
