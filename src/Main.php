@@ -9,6 +9,7 @@ use Rocket\Slack\BlockKit\Block\Header as SlackHeader;
 use Rocket\Slack\BlockKit\Block\Section as SlackSection;
 use Rocket\Slack\BlockKit\Element\MarkdownText as SlackMarkdownText;
 use Rocket\Slack\BlockKit\Element\PlainText as SlackPlainText;
+use Rocket\Slack\BlockKit\Message;
 use Rocket\Slack\BlockKit\Message as SlackMessage;
 
 class Main
@@ -82,6 +83,36 @@ class Main
 
         $configure = new Configure($config_path);
         $self = $this;
+
+        // NOTIFICATION
+        if ($this->options->hasNotify()) {
+            $lines = [];
+            while ($line = fgets(STDIN)) {
+                $lines[] = trim($line);
+            }
+
+            $message = new Message();
+
+            $chunks = str_split(implode(PHP_EOL, $lines), SlackSection::TEXT_MAX_LENGTH - 6);
+            foreach ($chunks as $chunk) {
+                $message
+                    ->addBlock(
+                        (new SlackSection())
+                            ->addField(
+                                new SlackMarkdownText('```' . $chunk . '```')
+                            )
+                    );
+            }
+
+            $slack = new Slack(
+                $configure->read('slack.incomingWebhook'),
+                $configure->read('slack.channel'),
+                $configure->read('slack.username')
+            );
+            $slack->send($message);
+
+            return;
+        }
 
         // USER CHECK
         if (posix_getpwuid(posix_geteuid())['name'] !== $configure->read('user')) {

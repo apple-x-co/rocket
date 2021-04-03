@@ -22,6 +22,7 @@ class Options
             'debug',
             'help',
             'info',
+            'notify',
             'notify-test',
             'no-color',
             'upgrade',
@@ -79,9 +80,17 @@ class Options
     /**
      * @return bool
      */
+    public function hasNotify()
+    {
+        return $this->has('notify') || $this->has('n');
+    }
+
+    /**
+     * @return bool
+     */
     public function hasNotifyTest()
     {
-        return $this->has('notify-test') || $this->has('n');
+        return $this->has('notify-test');
     }
 
     /**
