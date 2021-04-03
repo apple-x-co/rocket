@@ -35,6 +35,13 @@ class Main
             return;
         }
 
+        // INFO
+        if ($this->options->hasInfo()) {
+            $this->printInfo();
+
+            return;
+        }
+
         // HELP
         if ($this->options->hasHelp()) {
             $this->printHelp();
@@ -65,9 +72,9 @@ class Main
 
         if ($this->options->hasVerify()) {
             if (Configure::verify($config_path)) {
-                $this->printInfo($config_path . ': OK');
+                $this->info($config_path . ': OK');
             } else {
-                $this->printError($config_path . ': NG');
+                $this->error($config_path . ': NG');
             }
 
             return;
@@ -78,7 +85,7 @@ class Main
 
         // USER CHECK
         if (posix_getpwuid(posix_geteuid())['name'] !== $configure->read('user')) {
-            $this->printError('can not executed user.');
+            $this->error('can not executed user.');
 
             return;
         }
@@ -92,7 +99,7 @@ class Main
             );
             $slackResult = $slack->test($configure);
             if (! $slackResult->isOk()) {
-                $this->printError($slackResult->getError());
+                $this->error($slackResult->getError());
             }
 
             return;
@@ -119,16 +126,16 @@ class Main
                 ->setSubscribeEvent(CommandEvents::BEFORE_EXECUTION, function ($command) use ($self) {
                     /** @var Command $command */
                     if ($self->options->hasDebug()) {
-                        $self->printDebug('$ ' . $command->string());
+                        $self->debug('$ ' . $command->string());
                     }
                 })
                 ->execute();
             if ($command->isSuccess()) {
-                $this->printInfo('> ' . $command->string());
-                $this->printInfo($command->getOutputString());
+                $this->info('> ' . $command->string());
+                $this->info($command->getOutputString());
             } else {
-                $this->printInfo('> ' . $command->string());
-                $this->printError($command->getOutputString());
+                $this->info('> ' . $command->string());
+                $this->error($command->getOutputString());
 
                 return;
             }
@@ -147,17 +154,17 @@ class Main
                 ->setSubscribeEvent(CommandEvents::BEFORE_EXECUTION, function ($command) use ($self) {
                     /** @var Command $command */
                     if ($self->options->hasDebug()) {
-                        $self->printDebug('$ ' . $command->string());
+                        $self->debug('$ ' . $command->string());
                     }
                 })
                 ->execute();
 
             if ($command->isSuccess()) {
-                $this->printInfo('> ' . $command->string());
-                $this->printInfo($command->getOutputString());
+                $this->info('> ' . $command->string());
+                $this->info($command->getOutputString());
             } else {
-                $this->printError('> ' . $command->string());
-                $this->printError($command->getOutputString());
+                $this->error('> ' . $command->string());
+                $this->error($command->getOutputString());
 
                 return;
             }
@@ -185,7 +192,7 @@ class Main
                     ->setSubscribeEvent(CommandEvents::BEFORE_EXECUTION, function ($command) use ($self) {
                         /** @var Command $command */
                         if ($self->options->hasDebug()) {
-                            $self->printDebug('$ ' . $command->string());
+                            $self->debug('$ ' . $command->string());
                         }
                     });
 
@@ -201,11 +208,11 @@ class Main
                             ->addArgument('--dry-run')
                             ->execute();
                         if ($command->isSuccess()) {
-                            $this->printInfo('> rsync dry');
-                            $this->printInfo($command->getOutputString());
+                            $this->info('> rsync dry');
+                            $this->info($command->getOutputString());
                         } else {
-                            $this->printError('> rsync');
-                            $this->printError($command->getOutputString());
+                            $this->error('> rsync');
+                            $this->error($command->getOutputString());
                         }
 
                         break;
@@ -214,12 +221,12 @@ class Main
                             ->execute();
                         if ($command->isSuccess()) {
                             $sync_log .= $command->getOutputString();
-                            $this->printInfo('> rsync');
-                            $this->printInfo($command->getOutputString());
+                            $this->info('> rsync');
+                            $this->info($command->getOutputString());
                         } else {
                             $error = true;
-                            $this->printError('> rsync');
-                            $this->printError($command->getOutputString());
+                            $this->error('> rsync');
+                            $this->error($command->getOutputString());
                         }
 
                         break;
@@ -231,24 +238,24 @@ class Main
                             ->execute();
                         if ($command->isSuccess()) {
                             $sync_log .= $command->getOutputString();
-                            $this->printInfo('> rsync dry');
-                            $this->printInfo($command->getOutputString());
+                            $this->info('> rsync dry');
+                            $this->info($command->getOutputString());
                         } else {
                             $error = true;
-                            $this->printError('> rsync');
-                            $this->printError($command->getOutputString());
+                            $this->error('> rsync');
+                            $this->error($command->getOutputString());
                         }
 
                         echo 'Do you want to synchronize? [y/N]' . PHP_EOL;
                         if (trim(fgets(STDIN)) === 'y') {
                             $_command->execute();
                             if ($_command->isSuccess()) {
-                                $this->printInfo('> rsync');
-                                $this->printInfo($_command->getOutputString());
+                                $this->info('> rsync');
+                                $this->info($_command->getOutputString());
                             } else {
                                 $error = true;
-                                $this->printError('> rsync');
-                                $this->printError($_command->getOutputString());
+                                $this->error('> rsync');
+                                $this->error($_command->getOutputString());
                             }
                         }
 
@@ -277,15 +284,15 @@ class Main
                         ->setSubscribeEvent(CommandEvents::BEFORE_EXECUTION, function ($command) use ($self) {
                             /** @var Command $command */
                             if ($self->options->hasDebug()) {
-                                $self->printDebug('$ ' . $command->string());
+                                $self->debug('$ ' . $command->string());
                             }
                         })
                         ->execute();
 
                     if ($command->isSuccess()) {
-                        $this->printInfo($command->path() . ': ' . $command->getOutputString());
+                        $this->info($command->path() . ': ' . $command->getOutputString());
                     } else {
-                        $this->printError($command->getOutputString());
+                        $this->error($command->getOutputString());
                     }
                 }
             }
@@ -385,7 +392,7 @@ class Main
             );
             $slackResult = $slack->send($message);
             if (! $slackResult->isOk()) {
-                $this->printError($slackResult->getError());
+                $this->error($slackResult->getError());
             }
         }
     }
@@ -408,7 +415,7 @@ class Main
         $working_directory_path = sys_get_temp_dir() . '/' . 'rocket-' . substr(str_shuffle('1234567890abcdefghijklmnopqrstuvwxyz'),
                 0, 8);
         if (! mkdir($working_directory_path) && ! is_dir($working_directory_path)) {
-            $this->printError(sprintf('Directory "%s" was not created.', $working_directory_path));
+            $this->error(sprintf('Directory "%s" was not created.', $working_directory_path));
 
             return;
         }
@@ -420,12 +427,21 @@ class Main
         $updater = new Updater($working_directory_path);
         $result = $updater->upgrade();
         if (! $result->isOk()) {
-            $this->printError($result->getError());
+            $this->error($result->getError());
 
             return;
         }
 
-        $this->printInfo('New version: ' . $result->getFilePath());
+        $this->info('New version: ' . $result->getFilePath());
+    }
+
+    private function printInfo()
+    {
+        echo 'OS:             ' . php_uname() . PHP_EOL;
+        echo 'PHP binary:     ' . PHP_BINARY . PHP_EOL;
+        echo 'PHP version:    ' . PHP_VERSION . PHP_EOL;
+        echo 'php.ini used:	' . php_ini_loaded_file() . PHP_EOL;
+        echo 'rocket version: ' . self::VERSION . PHP_EOL;
     }
 
     private function printHelp()
@@ -476,12 +492,12 @@ class Main
 
     private function printUsage()
     {
-        $this->printWarning('Usage: ./rocket.phar --config ./rocket.json --git [pull] --sync [dry|confirm|force]');
+        $this->warning('Usage: ./rocket.phar --config ./rocket.json --git [pull] --sync [dry|confirm|force]');
     }
 
     private function printInit()
     {
-        $this->printWarning('Usage: ./rocket.phar --init > ./rocket.json');
+        $this->warning('Usage: ./rocket.phar --init > ./rocket.json');
     }
 
     /**
@@ -489,13 +505,13 @@ class Main
      */
     private function printNotfoundPath($path)
     {
-        $this->printError($path . ': No such file or directory');
+        $this->error($path . ': No such file or directory');
     }
 
     /**
      * @param string $reason
      */
-    private function printError($reason)
+    private function error($reason)
     {
         $string = self::appName() . ': ' . $reason;
         if ($this->options->hasNoColor()) {
@@ -508,7 +524,7 @@ class Main
     /**
      * @param string $text
      */
-    private function printWarning($text)
+    private function warning($text)
     {
         if ($this->options->hasNoColor()) {
             echo $text . PHP_EOL;
@@ -520,7 +536,7 @@ class Main
     /**
      * @param string $text
      */
-    private function printInfo($text)
+    private function info($text)
     {
         if ($this->options->hasNoColor()) {
             echo $text . PHP_EOL;
@@ -532,7 +548,7 @@ class Main
     /**
      * @param string $text
      */
-    private function printDebug($text)
+    private function debug($text)
     {
         if ($this->options->hasNoColor()) {
             echo $text . PHP_EOL;

@@ -19,12 +19,13 @@ class Options
             'init:',
             'unzip:',
 
+            'debug',
             'help',
+            'info',
             'notify-test',
+            'no-color',
             'upgrade',
             'verify',
-            'debug',
-            'no-color'
         ]);
 
         $this->options = $options;
@@ -65,6 +66,14 @@ class Options
     public function hasHelp()
     {
         return $this->has('help') || $this->has('h');
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasInfo()
+    {
+        return $this->has('info');
     }
 
     /**
