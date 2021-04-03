@@ -2,13 +2,14 @@
 
 namespace Rocket;
 
-use Rocket\SlackBlock\Context;
-use Rocket\SlackBlock\ContextElement;
-use Rocket\SlackBlock\Divider;
-use Rocket\SlackBlock\Header;
-use Rocket\SlackBlock\Image;
-use Rocket\SlackBlock\Section;
-use Rocket\SlackBlock\SectionField;
+use Rocket\Slack\BlockKit\Block\Context;
+use Rocket\Slack\BlockKit\Block\Divider;
+use Rocket\Slack\BlockKit\Block\Header;
+use Rocket\Slack\BlockKit\Block\Image as BlockImage;
+use Rocket\Slack\BlockKit\Block\Section;
+use Rocket\Slack\BlockKit\Element\MarkdownText;
+use Rocket\Slack\BlockKit\Element\PlainText;
+use Rocket\Slack\BlockKit\Message;
 
 class Slack
 {
@@ -24,14 +25,14 @@ class Slack
     /**
      * Slack constructor.
      *
-     * @param string $url
+     * @param string      $url
      * @param string|null $channel
      * @param string|null $username
      */
     public function __construct($url, $channel = null, $username = null)
     {
-        $this->url      = $url;
-        $this->channel  = $channel;
+        $this->url = $url;
+        $this->channel = $channel;
         $this->username = $username;
     }
 
@@ -64,20 +65,16 @@ class Slack
     }
 
     /**
-     * @param array|SlackBlock $data
+     * @param Message $message
      *
      * @return SlackIncomingResult
      */
-    public function send($data)
+    public function send($message)
     {
-        if ($data instanceof SlackBlock) {
-            $data = [
-                'channel'    => $this->channel,
-                'username'   => $this->username,
-                'icon_emoji' => ':rocket:',
-                'blocks'     => $data->build()
-            ];
-        }
+        $data = array_merge([
+            'channel' => $this->channel,
+            'username' => $this->username,
+        ], $message->toArray());
 
         return $this->sendMessage($data);
     }
@@ -89,40 +86,57 @@ class Slack
      */
     public function test($configure)
     {
-        $slackBlock = new SlackBlock();
-        $slackBlock
+        $message = new Message();
+        $message
             ->addBlock(
-                new Header('This is a test')
+                new Header(new PlainText('This is a test'))
             )
             ->addBlock(
-                new Image('https://picsum.photos/600/100', 'sample')
+                new BlockImage('https://picsum.photos/600/100', 'sample')
             )
             ->addBlock(
-                Section::plain_text(get_current_user() . ' was deployed :simple_smile:')
+                (new Section())->setText(
+                    new PlainText(get_current_user() . ' was deployed :simple_smile:')
+                )
             )
             ->addBlock(
-                Section::fields()
+                (new Section())
                     ->addField(
-                        SectionField::markdown('*Hostname:*' . PHP_EOL . gethostname())
+                        new MarkdownText('*Hostname:*' . PHP_EOL . gethostname())
                     )
                     ->addField(
-                        SectionField::markdown('*URL:*' . PHP_EOL . $configure->read('url'))
+                        new MarkdownText('*URL:*' . PHP_EOL . $configure->read('url'))
                     )
             )
             ->addBlock(
                 new Divider()
             )
             ->addBlock(
-                Section::bold('Git pull')
+                (new Section())
+                    ->addField(
+                        new MarkdownText('*Git pull*')
+                    )
             )
             ->addBlock(
-                Section::code_block('HELLO WORLD')
+                (new Section())
+                    ->addField(
+                        new MarkdownText('```HELLO WORLD```')
+                    )
             )
             ->addBlock(
-                Section::bold('Rsync')
+                new Divider()
             )
             ->addBlock(
-                Section::code_block('HELLO WORLD')
+                (new Section())
+                    ->addField(
+                        new MarkdownText('*Rsync*')
+                    )
+            )
+            ->addBlock(
+                (new Section())
+                    ->addField(
+                        new MarkdownText('```HELLO WORLD```')
+                    )
             )
             ->addBlock(
                 new Divider()
@@ -130,21 +144,16 @@ class Slack
             ->addBlock(
                 (new Context())
                     ->addElement(
-                        ContextElement::markdown('Date: ' . date("Y/m/d H:i:s"))
+                        new MarkdownText('Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        ContextElement::markdown('Version: ' . Main::appName() . ' ' . Main::VERSION)
+                        new MarkdownText('Version: ' . Main::appName() . ' ' . Main::VERSION)
                     )
                     ->addElement(
-                        ContextElement::markdown('Configuration: ' . $configure->getConfigPath())
+                        new MarkdownText('Configuration: ' . $configure->getConfigPath())
                     )
             );
 
-        return $this->sendMessage([
-            'channel'    => $this->channel,
-            'username'   => $this->username,
-            'icon_emoji' => ':rocket:',
-            'blocks'     => $slackBlock->build()
-        ]);
+        return $this->send($message);
     }
 }

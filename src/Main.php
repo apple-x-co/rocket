@@ -3,12 +3,13 @@
 namespace Rocket;
 
 use Phar;
-use Rocket\SlackBlock\Context as SlackBlockContext;
-use Rocket\SlackBlock\ContextElement as SlackBlockContextElement;
-use Rocket\SlackBlock\Divider as SlackBlockDivider;
-use Rocket\SlackBlock\Header as SlackBlockHeader;
-use Rocket\SlackBlock\Section as SlackBlockSection;
-use Rocket\SlackBlock\SectionField as SlackBlockSectionField;
+use Rocket\Slack\BlockKit\Block\Context as SlackContext;
+use Rocket\Slack\BlockKit\Block\Divider as SlackDivider;
+use Rocket\Slack\BlockKit\Block\Header as SlackHeader;
+use Rocket\Slack\BlockKit\Block\Section as SlackSection;
+use Rocket\Slack\BlockKit\Element\MarkdownText as SlackMarkdownText;
+use Rocket\Slack\BlockKit\Element\PlainText as SlackPlainText;
+use Rocket\Slack\BlockKit\Message as SlackMessage;
 
 class Main
 {
@@ -30,37 +31,45 @@ class Main
         // INIT
         if ($this->options->hasInit()) {
             $this->printConfig($this->options->getInit());
+
             return;
         }
 
         // HELP
         if ($this->options->hasHelp()) {
             $this->printHelp();
+
             return;
         }
 
         // UPGRADE
         if ($this->options->hasUpgrade()) {
             $this->upgrade();
+
             return;
         }
 
         // CONFIGURE
         if (! $this->options->hasConfig()) {
             $this->printUsage();
+
             return;
         }
+
         $config_path = realpath($this->options->getConfig());
         if (! file_exists($config_path)) {
             $this->printInit();
+
             return;
         }
+
         if ($this->options->hasVerify()) {
             if (Configure::verify($config_path)) {
                 $this->printInfo($config_path . ': OK');
             } else {
                 $this->printError($config_path . ': NG');
             }
+
             return;
         }
 
@@ -70,6 +79,7 @@ class Main
         // USER CHECK
         if (posix_getpwuid(posix_geteuid())['name'] !== $configure->read('user')) {
             $this->printError('can not executed user.');
+
             return;
         }
 
@@ -84,6 +94,7 @@ class Main
             if (! $slackResult->isOk()) {
                 $this->printError($slackResult->getError());
             }
+
             return;
         }
 
@@ -93,6 +104,7 @@ class Main
             $directory_path = $configure->read('source.directory');
             if (! is_dir($directory_path)) {
                 $this->printNotfoundPath($directory_path);
+
                 return;
             }
 
@@ -117,8 +129,10 @@ class Main
             } else {
                 $this->printInfo('> ' . $command->string());
                 $this->printError($command->getOutputString());
+
                 return;
             }
+
             if (strpos($command->getOutputString(), 'local out of date') === false) {
                 return;
             }
@@ -144,6 +158,7 @@ class Main
             } else {
                 $this->printError('> ' . $command->string());
                 $this->printError($command->getOutputString());
+
                 return;
             }
 
@@ -192,6 +207,7 @@ class Main
                             $this->printError('> rsync');
                             $this->printError($command->getOutputString());
                         }
+
                         break;
                     case 'force':
                         $command
@@ -205,6 +221,7 @@ class Main
                             $this->printError('> rsync');
                             $this->printError($command->getOutputString());
                         }
+
                         break;
                     case 'confirm':
                         $_command = clone $command;
@@ -234,6 +251,7 @@ class Main
                                 $this->printError($_command->getOutputString());
                             }
                         }
+
                         break;
                 }
 
@@ -275,73 +293,88 @@ class Main
 
         // NOTIFICATION
         if ($is_file_changed) {
-            $slackBlock = new SlackBlock();
-            $slackBlock
+            $message = new SlackMessage();
+            $message
                 ->addBlock(
-                    new SlackBlockHeader('Deploy successful')
+                    new SlackHeader(new SlackPlainText('Deploy successful'))
                 )
                 ->addBlock(
-                    SlackBlockSection::plain_text(get_current_user() . ' was deployed :simple_smile:')
+                    (new SlackSection())->setText(
+                        new SlackPlainText(get_current_user() . ' was deployed :simple_smile:')
+                    )
                 )
                 ->addBlock(
-                    SlackBlockSection::fields()
+                    (new SlackSection())
                         ->addField(
-                            SlackBlockSectionField::markdown('*Hostname:*' . PHP_EOL . gethostname())
+                            new SlackMarkdownText('*Hostname:*' . PHP_EOL . gethostname())
                         )
                         ->addField(
-                            SlackBlockSectionField::markdown('*URL:*' . PHP_EOL . $configure->read('url'))
+                            new SlackMarkdownText('*URL:*' . PHP_EOL . $configure->read('url'))
                         )
                 );
 
             if ($git_pull_log !== null) {
-                $slackBlock
+                $message
                     ->addBlock(
-                        new SlackBlockDivider()
+                        new SlackDivider()
                     )
                     ->addBlock(
-                        SlackBlockSection::bold('Git pull')
+                        (new SlackSection())
+                            ->addField(
+                                new SlackMarkdownText('*Git pull*')
+                            )
                     );
 
-                $chunks = str_split($git_pull_log, SlackBlock::MAX_LENGTH - 6);
+                $chunks = str_split($git_pull_log, SlackSection::TEXT_MAX_LENGTH - 6);
                 foreach ($chunks as $chunk) {
-                    $slackBlock
+                    $message
                         ->addBlock(
-                            SlackBlockSection::code_block($chunk)
+                            (new SlackSection())
+                                ->addField(
+                                    new SlackMarkdownText('```' . $chunk . '```')
+                                )
                         );
                 }
             }
+
             if ($sync_log !== null) {
-                $slackBlock
+                $message
                     ->addBlock(
-                        new SlackBlockDivider()
+                        new SlackDivider()
                     )
                     ->addBlock(
-                        SlackBlockSection::bold('Rsync')
+                        (new SlackSection())
+                            ->addField(
+                                new SlackMarkdownText('*Rsync*')
+                            )
                     );
 
-                $chunks = str_split($sync_log, SlackBlock::MAX_LENGTH - 6);
+                $chunks = str_split($sync_log, SlackSection::TEXT_MAX_LENGTH - 6);
                 foreach ($chunks as $chunk) {
-                    $slackBlock
+                    $message
                         ->addBlock(
-                            SlackBlockSection::code_block($chunk)
+                            (new SlackSection())
+                                ->addField(
+                                    new SlackMarkdownText('```' . $chunk . '```')
+                                )
                         );
                 }
             }
 
-            $slackBlock
+            $message
                 ->addBlock(
-                    new SlackBlockDivider()
+                    new SlackDivider()
                 )
                 ->addBlock(
-                    (new SlackBlockContext())
+                    (new SlackContext())
                         ->addElement(
-                            SlackBlockContextElement::markdown('Date: ' . date('Y/m/d H:i:s'))
+                            new SlackMarkdownText('Date: ' . date("Y/m/d H:i:s"))
                         )
                         ->addElement(
-                            SlackBlockContextElement::markdown('Version: ' . self::appName() . ' ' . self::VERSION)
+                            new SlackMarkdownText('Version: ' . self::appName() . ' ' . self::VERSION)
                         )
                         ->addElement(
-                            SlackBlockContextElement::markdown('Configuration: ' . $configure->getConfigPath())
+                            new SlackMarkdownText('Configuration: ' . $configure->getConfigPath())
                         )
                 );
 
@@ -350,7 +383,7 @@ class Main
                 $configure->read('slack.channel'),
                 $configure->read('slack.username')
             );
-            $slackResult = $slack->send($slackBlock);
+            $slackResult = $slack->send($message);
             if (! $slackResult->isOk()) {
                 $this->printError($slackResult->getError());
             }
@@ -372,9 +405,11 @@ class Main
 
     private function upgrade()
     {
-        $working_directory_path = sys_get_temp_dir() . '/' . 'rocket-' . substr(str_shuffle('1234567890abcdefghijklmnopqrstuvwxyz'), 0, 8);
-        if ( ! mkdir($working_directory_path) && ! is_dir($working_directory_path)) {
+        $working_directory_path = sys_get_temp_dir() . '/' . 'rocket-' . substr(str_shuffle('1234567890abcdefghijklmnopqrstuvwxyz'),
+                0, 8);
+        if (! mkdir($working_directory_path) && ! is_dir($working_directory_path)) {
             $this->printError(sprintf('Directory "%s" was not created.', $working_directory_path));
+
             return;
         }
 
@@ -384,8 +419,9 @@ class Main
 
         $updater = new Updater($working_directory_path);
         $result = $updater->upgrade();
-        if ( ! $result->isOk()) {
+        if (! $result->isOk()) {
             $this->printError($result->getError());
+
             return;
         }
 
@@ -419,14 +455,19 @@ class Main
     {
         if ($template === 'cakephp3') {
             echo file_get_contents(__DIR__ . '/config/cakephp3.json') . PHP_EOL;
+
             return;
         }
+
         if ($template === 'eccube4') {
             echo file_get_contents(__DIR__ . '/config/eccube4.json') . PHP_EOL;
+
             return;
         }
+
         if ($template === 'wordpress') {
             echo file_get_contents(__DIR__ . '/config/wordpress.json') . PHP_EOL;
+
             return;
         }
 

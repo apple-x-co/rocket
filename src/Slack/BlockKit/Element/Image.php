@@ -1,10 +1,8 @@
 <?php
 
-namespace Rocket\SlackBlock;
+namespace Rocket\Slack\BlockKit\Element;
 
-use Rocket\SlackBlockInterface;
-
-class Image implements SlackBlockInterface
+class Image implements ElementInterface
 {
     /** @var string */
     private $url;
@@ -13,8 +11,6 @@ class Image implements SlackBlockInterface
     private $alt;
 
     /**
-     * Image constructor.
-     *
      * @param string $url
      * @param string $alt
      */
@@ -25,14 +21,14 @@ class Image implements SlackBlockInterface
     }
 
     /**
-     * @return array{type: string, image_url: string, alt_text: string}
+     * @inheritDoc
      */
-    public function build()
+    public function toArray()
     {
         return [
             'type' => 'image',
             'image_url' => $this->url,
-            'alt_text' => $this->alt
+            'alt_text' => $this->alt,
         ];
     }
 }
