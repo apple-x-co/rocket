@@ -487,7 +487,8 @@ class Main
         echo '  -g, --git [pull]                                Git operation' . PHP_EOL;
         echo '  -h, --help                                      Display this help message' . PHP_EOL;
         echo '  -i, --init [plain|cakephp3|eccube4|wordpress]   Print sample configuration file' . PHP_EOL;
-        echo '  -n, --notify-test                               Slack notification test' . PHP_EOL;
+        echo '  -n, --notify                                    Simple slack notification' . PHP_EOL;
+        echo '      --notify-test                               Slack notification test' . PHP_EOL;
         echo '      --no-color                                  Without color' . PHP_EOL;
         echo '  -s, --sync [dry|confirm|force]                  Rsync operation' . PHP_EOL;
         echo '  -u, --upgrade                                   Download new version file' . PHP_EOL;
