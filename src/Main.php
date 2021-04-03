@@ -14,7 +14,7 @@ use Rocket\Slack\BlockKit\Message as SlackMessage;
 
 class Main
 {
-    const VERSION = '0.1.7';
+    const VERSION = '0.1.8';
 
     /** @var Options */
     private $options = null;
