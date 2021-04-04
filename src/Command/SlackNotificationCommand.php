@@ -46,7 +46,7 @@ class SlackNotificationCommand implements CommandInterface
                 ->addBlock(
                     (new SlackSection())
                         ->setText(
-                            new SlackMarkdownText('```' . $chunk . '```')
+                            new SlackMarkdownText($chunk)
                         )
                 );
         }
