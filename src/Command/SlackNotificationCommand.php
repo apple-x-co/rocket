@@ -2,6 +2,7 @@
 
 namespace Rocket\Command;
 
+use Rocket\Chunker;
 use Rocket\CommandInterface;
 use Rocket\Configure;
 use Rocket\Options;
@@ -30,14 +31,16 @@ class SlackNotificationCommand implements CommandInterface
         $configPath = realpath($this->options->getConfig());
         $configure = new Configure($configPath);
 
-        $lines = [];
+        $content = null;
         while ($line = fgets(STDIN)) {
-            $lines[] = trim($line);
+            $content .= $line;
         }
 
         $message = new SlackMessage();
 
-        $chunks = str_split(implode(PHP_EOL, $lines), SlackSection::TEXT_MAX_LENGTH - 6);
+        $chunker = new Chunker();
+        $chunks = $chunker($content, SlackSection::TEXT_MAX_LENGTH - 6);
+
         foreach ($chunks as $chunk) {
             $message
                 ->addBlock(

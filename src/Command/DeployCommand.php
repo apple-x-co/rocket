@@ -2,6 +2,7 @@
 
 namespace Rocket\Command;
 
+use Rocket\Chunker;
 use Rocket\CommandInterface;
 use Rocket\Configure;
 use Rocket\Main;
@@ -36,6 +37,8 @@ class DeployCommand implements CommandInterface
     {
         $configPath = realpath($this->options->getConfig());
         $configure = new Configure($configPath);
+
+        $chunker = new Chunker();
 
         $self = $this;
 
@@ -282,7 +285,7 @@ class DeployCommand implements CommandInterface
                         )
                 );
 
-            $chunks = str_split($gitPullLog, SlackSection::TEXT_MAX_LENGTH - 6);
+            $chunks = $chunker($gitPullLog, SlackSection::TEXT_MAX_LENGTH - 6);
             foreach ($chunks as $chunk) {
                 $message
                     ->addBlock(
@@ -306,7 +309,7 @@ class DeployCommand implements CommandInterface
                         )
                 );
 
-            $chunks = str_split($syncLog, SlackSection::TEXT_MAX_LENGTH - 6);
+            $chunks = $chunker($syncLog, SlackSection::TEXT_MAX_LENGTH - 6);
             foreach ($chunks as $chunk) {
                 $message
                     ->addBlock(
