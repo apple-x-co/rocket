@@ -10,6 +10,7 @@ use Rocket\Slack\BlockKit\Block\Section;
 use Rocket\Slack\BlockKit\Element\MarkdownText;
 use Rocket\Slack\BlockKit\Element\PlainText;
 use Rocket\Slack\BlockKit\Message;
+use Rocket\Slack\SlackIncomingResult;
 
 class Slack
 {
@@ -113,13 +114,13 @@ class Slack
             )
             ->addBlock(
                 (new Section())
-                    ->addField(
+                    ->setText(
                         new MarkdownText('*Git pull*')
                     )
             )
             ->addBlock(
                 (new Section())
-                    ->addField(
+                    ->setText(
                         new MarkdownText('```HELLO WORLD```')
                     )
             )
@@ -128,13 +129,13 @@ class Slack
             )
             ->addBlock(
                 (new Section())
-                    ->addField(
+                    ->setText(
                         new MarkdownText('*Rsync*')
                     )
             )
             ->addBlock(
                 (new Section())
-                    ->addField(
+                    ->setText(
                         new MarkdownText('```HELLO WORLD```')
                     )
             )

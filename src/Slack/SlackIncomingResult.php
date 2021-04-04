@@ -1,6 +1,6 @@
 <?php
 
-namespace Rocket;
+namespace Rocket\Slack;
 
 class SlackIncomingResult
 {

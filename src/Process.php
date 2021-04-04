@@ -4,7 +4,7 @@ namespace Rocket;
 
 use Exception;
 
-class Command
+class Process
 {
     /** @var string */
     private $command_path = null;
@@ -24,7 +24,7 @@ class Command
     /**
      * @param $path
      *
-     * @return Command
+     * @return Process
      * @throws Exception
      */
     public static function define($path)
@@ -118,8 +118,8 @@ class Command
     {
         $command = $this->build();
 
-        if (isset($this->events[CommandEvents::BEFORE_EXECUTION])) {
-            $callable = $this->events[CommandEvents::BEFORE_EXECUTION];
+        if (isset($this->events[ProcessEvents::BEFORE_EXECUTION])) {
+            $callable = $this->events[ProcessEvents::BEFORE_EXECUTION];
             $callable($this);
         }
 

@@ -2,7 +2,7 @@
 
 namespace Rocket;
 
-class CommandEvents
+class ProcessEvents
 {
     const BEFORE_EXECUTION = 'command.before_execution';
 }
