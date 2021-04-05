@@ -15,7 +15,7 @@ use Rocket\Command\VerifyCommand;
 
 class Main
 {
-    const VERSION = '0.1.8';
+    const VERSION = '0.1.9';
 
     /** @var Options */
     private $options = null;
