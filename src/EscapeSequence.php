@@ -33,7 +33,7 @@ class EscapeSequence
     const BACKGROUND_CYAN = "\e[46m";
     const BACKGROUND_WHITE = "\e[47m";
 
-    const COLORS = [
+    private static $COLORS = [
         'black' => self::FOREGROUND_BLACK,
         'white' => self::FOREGROUND_WHITE,
         'red' => self::FOREGROUND_RED,
@@ -42,7 +42,7 @@ class EscapeSequence
         'bg-white' => self::BACKGROUND_WHITE,
     ];
 
-    const OPTIONS = [
+    private static $OPTIONS = [
         'bold' => self::BOLD,
         'underline' => self::UNDERLINE,
         'brink' => self::BRINK,
@@ -81,18 +81,18 @@ class EscapeSequence
 
         if ($this->foreground !== null) {
             $format .= '%s';
-            $values[] = self::COLORS[$this->foreground];
+            $values[] = self::$COLORS[$this->foreground];
         }
 
         if ($this->background !== null) {
             $format .= '%s';
-            $values[] = self::COLORS[$this->background];
+            $values[] = self::$COLORS[$this->background];
         }
 
         if (! empty($this->options)) {
             $optionCodes = [];
             foreach ($this->options as $option) {
-                $optionCodes[] = self::OPTIONS[$option];
+                $optionCodes[] = self::$OPTIONS[$option];
             }
 
             if (! empty($optionCodes)) {
