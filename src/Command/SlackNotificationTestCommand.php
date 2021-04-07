@@ -4,8 +4,8 @@ namespace Rocket\Command;
 
 use Rocket\CommandInterface;
 use Rocket\Configure;
+use Rocket\Http;
 use Rocket\Options;
-use Rocket\OutputInterface;
 use Rocket\Slack;
 
 class SlackNotificationTestCommand implements CommandInterface
@@ -13,13 +13,13 @@ class SlackNotificationTestCommand implements CommandInterface
     /** @var Options */
     private $options;
 
-    /** @var OutputInterface */
-    private $output;
+    /** @var Http */
+    private $http;
 
-    public function __construct(Options $options, OutputInterface $output)
+    public function __construct(Options $options, Http $http)
     {
         $this->options = $options;
-        $this->output = $output;
+        $this->http = $http;
     }
 
     public function execute()
@@ -30,7 +30,8 @@ class SlackNotificationTestCommand implements CommandInterface
         $slack = new Slack(
             $configure->read('slack.incomingWebhook'),
             $configure->read('slack.channel'),
-            $configure->read('slack.username')
+            $configure->read('slack.username'),
+            $this->http
         );
 
         $slack->test($configure);

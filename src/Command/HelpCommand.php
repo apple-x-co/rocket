@@ -3,27 +3,22 @@
 namespace Rocket\Command;
 
 use Rocket\CommandInterface;
-use Rocket\Main;
-use Rocket\Options;
 use Rocket\OutputInterface;
+use Rocket\Version;
 
 class HelpCommand implements CommandInterface
 {
-    /** @var Options */
-    private $options;
-
     /** @var OutputInterface */
     private $output;
 
-    public function __construct(Options $options, OutputInterface $output)
+    public function __construct(OutputInterface $output)
     {
-        $this->options = $options;
         $this->output = $output;
     }
 
     public function execute()
     {
-        $rocket = Main::VERSION;
+        $rocket = Version::ROCKET_VERSION;
 
         $content = <<<EOT
 rocket.phar {$rocket}
@@ -40,6 +35,7 @@ Options:
       --notify-test                               Slack notification test
       --no-color                                  Without color
   -s, --sync [dry|confirm|force]                  Rsync operation
+      --ssl [TLSv1_0|TLSv1_1|TLSv1_2]             SSL Version
   -u, --upgrade                                   Download new version file
       --unzip {path}                              Using zip command on upgrade
   -v, --verify                                    Verify configuration file

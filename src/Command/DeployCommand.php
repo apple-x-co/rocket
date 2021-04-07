@@ -5,6 +5,7 @@ namespace Rocket\Command;
 use Rocket\Chunker;
 use Rocket\CommandInterface;
 use Rocket\Configure;
+use Rocket\Http;
 use Rocket\Main;
 use Rocket\Options;
 use Rocket\OutputInterface;
@@ -18,6 +19,7 @@ use Rocket\Slack\BlockKit\Block\Section as SlackSection;
 use Rocket\Slack\BlockKit\Element\MarkdownText as SlackMarkdownText;
 use Rocket\Slack\BlockKit\Element\PlainText as SlackPlainText;
 use Rocket\Slack\BlockKit\Message as SlackMessage;
+use Rocket\Version;
 
 class DeployCommand implements CommandInterface
 {
@@ -27,10 +29,14 @@ class DeployCommand implements CommandInterface
     /** @var OutputInterface */
     private $output;
 
-    public function __construct(Options $options, OutputInterface $output)
+    /** @var Http */
+    private $http;
+
+    public function __construct(Options $options, OutputInterface $output, Http $http)
     {
         $this->options = $options;
         $this->output = $output;
+        $this->http = $http;
     }
 
     public function execute()
@@ -331,7 +337,7 @@ class DeployCommand implements CommandInterface
                         new SlackMarkdownText('Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        new SlackMarkdownText('Version: ' . Main::appName() . ' ' . Main::VERSION)
+                        new SlackMarkdownText('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
                     )
                     ->addElement(
                         new SlackMarkdownText('Configuration: ' . $configure->getConfigPath())
@@ -341,7 +347,8 @@ class DeployCommand implements CommandInterface
         $slack = new Slack(
             $configure->read('slack.incomingWebhook'),
             $configure->read('slack.channel'),
-            $configure->read('slack.username')
+            $configure->read('slack.username'),
+            $this->http
         );
         $slackResult = $slack->send($message);
         if (! $slackResult->isOk()) {

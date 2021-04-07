@@ -15,8 +15,6 @@ use Rocket\Command\VerifyCommand;
 
 class Main
 {
-    const VERSION = '0.1.9';
-
     /** @var Options */
     private $options = null;
 
@@ -31,15 +29,16 @@ class Main
     public function run()
     {
         $output = $this->options->hasNoColor() ? new Output() : new ColorOutput();
+        $http = (new Http($this->options->hasSsl() ? $this->options->getSsl() : null));
 
         $command = null;
 
         if ($this->options->hasInfo()) {
-            $command = new InfoCommand($this->options, $output);
+            $command = new InfoCommand($output);
         }
 
         if ($this->options->hasHelp()) {
-            $command = new HelpCommand($this->options, $output);
+            $command = new HelpCommand($output);
         }
 
         if ($this->options->hasInit()) {
@@ -47,7 +46,7 @@ class Main
         }
 
         if ($this->options->hasUpgrade()) {
-            $command = new UpgradeCommand($this->options, $output);
+            $command = new UpgradeCommand($output, $http);
         }
 
         if ($this->options->hasConfig()) {
@@ -58,21 +57,21 @@ class Main
                 }
 
                 if ($this->options->hasNotify()) {
-                    $command = new SlackNotificationCommand($this->options, $output);
+                    $command = new SlackNotificationCommand($this->options, $http);
                 }
 
                 if ($this->options->hasNotifyTest()) {
-                    $command = new SlackNotificationTestCommand($this->options, $output);
+                    $command = new SlackNotificationTestCommand($this->options, $http);
                 }
 
                 if ($command === null) {
-                    $command = new DeployCommand($this->options, $output);
+                    $command = new DeployCommand($this->options, $output, $http);
                 }
             }
         }
 
         if ($command === null) {
-            $command = new UsageCommand($this->options, $output);
+            $command = new UsageCommand($output);
         }
 
         $command->execute();

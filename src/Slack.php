@@ -23,18 +23,23 @@ class Slack
     /** @var string */
     private $username = null;
 
+    /** @var Http|null */
+    private $http = null;
+
     /**
      * Slack constructor.
      *
      * @param string      $url
      * @param string|null $channel
      * @param string|null $username
+     * @param Http|null   $http
      */
-    public function __construct($url, $channel = null, $username = null)
+    public function __construct($url, $channel = null, $username = null, $http = null)
     {
         $this->url = $url;
         $this->channel = $channel;
         $this->username = $username;
+        $this->http = $http;
     }
 
     /**
@@ -44,19 +49,15 @@ class Slack
      */
     private function sendMessage($data)
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_VERBOSE, false);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-        $result = curl_exec($ch);
-        curl_close($ch);
+        if ($this->http === null) {
+            return new SlackIncomingResult(true);
+        }
+
+        $result = $this->http->post(
+            $this->url,
+            'application/json',
+            $data
+        );
 
         if ($result === 'ok') {
             return new SlackIncomingResult(true);
@@ -148,7 +149,7 @@ class Slack
                         new MarkdownText('Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        new MarkdownText('Version: ' . Main::appName() . ' ' . Main::VERSION)
+                        new MarkdownText('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
                     )
                     ->addElement(
                         new MarkdownText('Configuration: ' . $configure->getConfigPath())
