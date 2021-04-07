@@ -5,25 +5,29 @@ namespace Rocket\Command;
 use Rocket\Chunker;
 use Rocket\CommandInterface;
 use Rocket\Configure;
+use Rocket\Http;
+use Rocket\Main;
 use Rocket\Options;
-use Rocket\OutputInterface;
 use Rocket\Slack;
+use Rocket\Slack\BlockKit\Block\Context as SlackContext;
+use Rocket\Slack\BlockKit\Block\Divider as SlackDivider;
 use Rocket\Slack\BlockKit\Block\Section as SlackSection;
 use Rocket\Slack\BlockKit\Element\MarkdownText as SlackMarkdownText;
 use Rocket\Slack\BlockKit\Message as SlackMessage;
+use Rocket\Version;
 
 class SlackNotificationCommand implements CommandInterface
 {
     /** @var Options */
     private $options;
 
-    /** @var OutputInterface */
-    private $output;
+    /** @var Http */
+    private $http;
 
-    public function __construct(Options $options, OutputInterface $output)
+    public function __construct(Options $options, Http $http)
     {
         $this->options = $options;
-        $this->output = $output;
+        $this->http = $http;
     }
 
     public function execute()
@@ -51,10 +55,28 @@ class SlackNotificationCommand implements CommandInterface
                 );
         }
 
+        $message
+            ->addBlock(
+                new SlackDivider()
+            )
+            ->addBlock(
+                (new SlackContext())
+                    ->addElement(
+                        new SlackMarkdownText('Date: ' . date("Y/m/d H:i:s"))
+                    )
+                    ->addElement(
+                        new SlackMarkdownText('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
+                    )
+                    ->addElement(
+                        new SlackMarkdownText('Configuration: ' . $configure->getConfigPath())
+                    )
+            );
+
         $slack = new Slack(
             $configure->read('slack.incomingWebhook'),
             $configure->read('slack.channel'),
-            $configure->read('slack.username')
+            $configure->read('slack.username'),
+            $this->http
         );
         $slack->send($message);
     }

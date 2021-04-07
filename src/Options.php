@@ -16,6 +16,7 @@ class Options
             'config:',
             'git:',
             'sync:',
+            'ssl:',
             'init:',
             'unzip:',
 
@@ -179,6 +180,22 @@ class Options
     public function hasDebug()
     {
         return $this->has('debug');
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasSsl()
+    {
+        return $this->has('ssl');
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getSsl()
+    {
+        return $this->get('ssl');
     }
 
     /**

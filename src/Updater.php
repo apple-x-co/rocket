@@ -11,9 +11,17 @@ class Updater
     /** @var string */
     private $dir;
 
-    public function __construct($dir)
+    /** @var Http */
+    private $http;
+
+    /**
+     * @param string $dir
+     * @param Http $http
+     */
+    public function __construct($dir, $http)
     {
         $this->dir = $dir;
+        $this->http = $http;
     }
 
     /**
@@ -26,7 +34,7 @@ class Updater
             return Result::failure('No versions.');
         }
 
-        if (version_compare(Main::VERSION, $latest['version'], '>=')) {
+        if (version_compare(Version::ROCKET_VERSION, $latest['version'], '>=')) {
             return Result::failure('Already have the latest version.');
         }
 
@@ -43,26 +51,7 @@ class Updater
 
     private function download($url)
     {
-        $tempfile = tmpfile();
-
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_VERBOSE, false);
-        curl_setopt($ch, CURLOPT_POST, false);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'User-Agent: rocket.phar/' . Main::VERSION
-        ]);
-        curl_setopt($ch, CURLOPT_FILE, $tempfile);
-        $result = curl_exec($ch);
-        curl_close($ch);
-
-        return $tempfile;
+        return $this->http->download($url);
     }
 
     /**
@@ -70,22 +59,7 @@ class Updater
      */
     private function getReleaseLatest()
     {
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, self::URL);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_VERBOSE, false);
-        curl_setopt($ch, CURLOPT_POST, false);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'User-Agent: rocket.phar/' . Main::VERSION
-        ]);
-        $result = curl_exec($ch);
-        curl_close($ch);
-
+        $result = $this->http->get(self::URL);
         $result = json_decode($result, true);
 
         if (! isset($result['tag_name'], $result['assets'][0]['browser_download_url'])) {

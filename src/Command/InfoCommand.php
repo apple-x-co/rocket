@@ -3,21 +3,16 @@
 namespace Rocket\Command;
 
 use Rocket\CommandInterface;
-use Rocket\Main;
-use Rocket\Options;
 use Rocket\OutputInterface;
+use Rocket\Version;
 
 class InfoCommand implements CommandInterface
 {
-    /** @var Options */
-    private $options;
-
     /** @var OutputInterface */
     private $output;
 
-    public function __construct(Options $options, OutputInterface $output)
+    public function __construct(OutputInterface $output)
     {
-        $this->options = $options;
         $this->output = $output;
     }
 
@@ -27,7 +22,7 @@ class InfoCommand implements CommandInterface
         $binary = PHP_BINARY;
         $version = PHP_VERSION;
         $ini = php_ini_loaded_file();
-        $rocket = MAIN::VERSION;
+        $rocket = Version::ROCKET_VERSION;
 
         $content = <<<EOT
 OS:             {$uname}
