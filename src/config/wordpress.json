@@ -1,9 +1,10 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "slack": {
     "channel": "channel-name",
     "username": "project-name",
-    "incomingWebhook": "https://hooks.slack.com/services/xxx"
+    "incomingWebhook": "https://hooks.slack.com/services/xxx",
+    "icon": ":tada:"
   },
   "user": "centos-user",
   "source": {

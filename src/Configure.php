@@ -5,26 +5,32 @@ namespace Rocket;
 use Closure;
 use RuntimeException;
 
+use function array_key_exists;
+use function explode;
+use function file_get_contents;
+use function json_decode;
+use function is_array;
+
 class Configure
 {
-    const VERSION = '1.0';
+    const VERSION = '1.1';
 
     /** @var array  */
     private $config;
 
     /** @var string */
-    private $config_path;
+    private $configPath;
 
     /**
-     * @param string $config_path
+     * @param string $configPath
      *
      * @throws RuntimeException
      */
-    public function __construct($config_path)
+    public function __construct($configPath)
     {
-        $this->config_path = $config_path;
+        $this->configPath = $configPath;
 
-        $config = json_decode(file_get_contents($config_path), true);
+        $config = json_decode(file_get_contents($configPath), true);
         if ($config === false) {
             throw new RuntimeException('config format error.');
         }
@@ -37,19 +43,21 @@ class Configure
     }
 
     /**
-     * @param $config_path
+     * @param string $configPath
+     *
+     * @return bool
      */
-    public static function verify($config_path)
+    public static function verify($configPath)
     {
-        $valid = true;
+        $isValid = true;
 
         try {
-            $instance = new static($config_path);
+            $instance = new static($configPath);
         } catch (RuntimeException $e) {
-            $valid = false;
+            $isValid = false;
         }
 
-        return $valid;
+        return $isValid;
     }
 
     /**
@@ -60,7 +68,7 @@ class Configure
      */
     public function read($key, $default = null)
     {
-        return $this->get_array($key, $default);
+        return $this->get($key, $default);
     }
 
     /**
@@ -68,23 +76,25 @@ class Configure
      */
     public function getConfigPath()
     {
-        return $this->config_path;
+        return $this->configPath;
     }
 
     /**
      * @param string $key
-     * @param string|null $default
+     * @param string|int|null $default
      *
-     * @return array|mixed|null
+     * @return array|string|int|null
      */
-    private function get_array($key, $default)
+    private function get($key, $default)
     {
         if ($key === null) {
             return $this->config;
         }
+
         if (isset($this->config[$key])) {
             return $this->config[$key];
         }
+
         $array = $this->config;
         foreach (explode('.', $key) as $segment) {
             if (! is_array($array) || ! array_key_exists($segment, $array)) {
