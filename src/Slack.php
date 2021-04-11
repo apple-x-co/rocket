@@ -88,7 +88,7 @@ class Slack
      */
     public function test($configure)
     {
-        $message = new Message();
+        $message = new Message('Test', $configure->read('slack.icon', ':sparkles:'));
         $message
             ->addBlock(
                 new Header(new PlainText('This is a test'))

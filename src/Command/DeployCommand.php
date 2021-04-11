@@ -259,7 +259,7 @@ class DeployCommand implements CommandInterface
             return;
         }
 
-        $message = new SlackMessage();
+        $message = new SlackMessage('Deploy successful', $configure->read('slack.icon', ':sparkles:'));
         $message
             ->addBlock(
                 new SlackHeader(new SlackPlainText('Deploy successful'))

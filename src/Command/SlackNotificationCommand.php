@@ -40,7 +40,7 @@ class SlackNotificationCommand implements CommandInterface
             $content .= $line;
         }
 
-        $message = new SlackMessage();
+        $message = new SlackMessage('Rocket notification', $configure->read('slack.icon', ':sparkles:'));
 
         $chunker = new Chunker();
         $chunks = $chunker($content, SlackSection::TEXT_MAX_LENGTH - 6);
