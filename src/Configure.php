@@ -5,12 +5,6 @@ namespace Rocket;
 use Closure;
 use RuntimeException;
 
-use function array_key_exists;
-use function explode;
-use function file_get_contents;
-use function json_decode;
-use function is_array;
-
 class Configure
 {
     const VERSION = '1.1';
