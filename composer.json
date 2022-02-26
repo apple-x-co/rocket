@@ -22,7 +22,8 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist/rocket.phar; phar-composer build .; mv -f rocket.phar dist/rocket.phar; chmod u+x dist/rocket.phar"
+    "build": "rm -rf dist/rocket.phar; phar-composer build .; mv -f rocket.phar dist/rocket.phar; chmod u+x dist/rocket.phar",
+    "info": "dist/rocket.phar --info --no-color"
   },
   "config": {
     "platform": {
