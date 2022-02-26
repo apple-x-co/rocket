@@ -51,4 +51,4 @@ cat example.txt | ./rocket.phar --config ./rocket.json --notify
 composer run-script build
 ```
 
-※プロジェクト内全てのファイルが圧縮されます。クレデンシャルファイルは配置しないこと。
+※ プロジェクト内の全てのファイルが圧縮されます。資格情報ファイルなどは配置しないでください。
