@@ -8,4 +8,8 @@ composer.phar
 # composer.lock
 
 ###
-/dist/
+
+composer.lock
+/build/
+phar-composer.phar
+rocket.phar

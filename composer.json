@@ -1,6 +1,6 @@
 {
   "name": "apple-x-co/rocket",
-  "description": "git & rsync & slack",
+  "description": "deploy tool",
   "authors": [
     {
       "name": "apple-x-co",
@@ -8,9 +8,10 @@
     }
   ],
   "bin": [
-    "bin/run.php"
+    "bin/rocket.php"
   ],
   "require": {
+    "php": "^5.4",
     "ext-curl": "*",
     "ext-json": "*",
     "ext-posix": "*",
@@ -22,12 +23,14 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist/rocket.phar; phar-composer build .; mv -f rocket.phar dist/rocket.phar; chmod u+x dist/rocket.phar",
-    "info": "dist/rocket.phar --info --no-color"
+    "information": "@php rocket.phar --info --no-color",
+    "download-phar-composer": "curl --silent --show-error --location https://clue.engineering/phar-composer-latest.phar --output phar-composer.phar",
+    "build": "@php bin/build.php"
   },
   "config": {
+    "sort-packages": true,
     "platform": {
-      "php": "5.6"
+      "php": "5.4"
     }
   }
 }
