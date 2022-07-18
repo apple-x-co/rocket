@@ -7,17 +7,15 @@
 ## Installation
 
 ```bash
-wget https://github.com/apple-x-co/rocket/releases/download/0.1.7/rocket.phar
+wget https://github.com/apple-x-co/rocket/releases/latest/download/rocket.phar
 chmod u+x rocket.phar
 ./rocket.phar --init > ./rocket.json
 ```
 
-```bash
-# slack notification test
-./rocket.phar --config ./rocket.json --notify-test
+## Information
 
-# verify rocket.json
-./rocket.phar --config ./rocket.json --verify
+```bash
+./rocket.phar --info #--no-color
 ```
 
 ## Update
@@ -29,6 +27,12 @@ chmod u+x rocket.phar
 ## Usage
 
 ```bash
+# slack notification test
+./rocket.phar --config ./rocket.json --notify-test
+
+# verify rocket.json
+./rocket.phar --config ./rocket.json --verify
+
 # dry run (default)
 ./rocket.phar --config ./rocket.json --sync dry
 
@@ -44,11 +48,3 @@ chmod u+x rocket.phar
 # notify
 cat example.txt | ./rocket.phar --config ./rocket.json --notify
 ```
-
-## Build phar file
-
-```bash
-composer run-script build
-```
-
-※ プロジェクト内の全てのファイルが圧縮されます。資格情報ファイルなどは配置しないでください。
