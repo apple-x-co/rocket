@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<ruleset name="">
+    <arg name="basepath" value="."/>
+    <arg name="extensions" value="php"/>
+    <arg name="parallel" value="80"/>
+    <arg name="cache" value=".phpcs-cache"/>
+
+    <!-- Directories to be checked -->
+    <file>src</file>
+
+    <!-- PSR12 Coding Standard -->
+    <rule ref="PSR12">
+        <exclude name="PSR12.Properties.ConstantVisibility" />
+    </rule>
+
+    <rule ref="PHPCompatibility">
+        <arg name="testVersion" value="5.4" />
+    </rule>
+</ruleset>

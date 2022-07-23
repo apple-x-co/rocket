@@ -11,11 +11,17 @@
     "bin/rocket.php"
   ],
   "require": {
-    "php": "^5.4",
+    "php": "^5.4 || ^7.0",
     "ext-curl": "*",
     "ext-json": "*",
     "ext-posix": "*",
     "ext-zip": "*"
+  },
+  "require-dev": {
+    "phpcompatibility/php-compatibility": "^9.3",
+    "phpstan/phpstan": "^1.8",
+    "squizlabs/php_codesniffer": "^3.7",
+    "vimeo/psalm": "^4.24"
   },
   "autoload": {
     "psr-4": {
@@ -25,12 +31,28 @@
   "scripts": {
     "information": "@php rocket.phar --info --no-color",
     "download-phar-composer": "curl --silent --show-error --location https://clue.engineering/phar-composer-latest.phar --output phar-composer.phar",
-    "build": "@php bin/build.php"
+    "build": "@php bin/build.php",
+    "cs": "./vendor/bin/phpcs",
+    "cs-fix": "./vendor/bin/phpcbf src tests",
+    "sa": [
+      "./vendor/bin/phpstan analyse -c phpstan.neon",
+      "psalm --show-info=true"
+    ],
+    "tests": [
+      "@cs",
+      "@sa"
+    ]
+  },
+  "scripts-descriptions": {
+    "cs": "Check the coding style",
+    "cs-fix": "Fix the coding style",
+    "sa": "Run static analysis",
+    "tests": "Run tests and quality checks"
   },
   "config": {
     "sort-packages": true,
-    "platform": {
-      "php": "5.4"
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
     }
   }
 }
