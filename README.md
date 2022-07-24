@@ -1,32 +1,29 @@
 # rocket
 
+[![Coding Standards](https://github.com/apple-x-co/rocket/actions/workflows/coding-standards.yml/badge.svg)](https://github.com/apple-x-co/rocket/actions/workflows/coding-standards.yml)
+[![Static Analysis](https://github.com/apple-x-co/rocket/actions/workflows/static-analysis.yml/badge.svg)](https://github.com/apple-x-co/rocket/actions/workflows/static-analysis.yml)
+
 ## Requirement
 
-* PHP 5.4+
+PHP version 5.4.0 or greater.
 
 ## Installation
 
 ```bash
+# Download using wget
 wget https://github.com/apple-x-co/rocket/releases/latest/download/rocket.phar
+
+# Then test the downloaded PHARs
 chmod u+x rocket.phar
 ./rocket.phar --init > ./rocket.json
-```
-
-## Information
-
-```bash
-./rocket.phar --info #--no-color
-```
-
-## Update
-
-```bash
-./rocket.phar --upgrade
 ```
 
 ## Usage
 
 ```bash
+# show information
+./rocket.phar --info #--no-color
+
 # slack notification test
 ./rocket.phar --config ./rocket.json --notify-test
 
@@ -47,4 +44,10 @@ chmod u+x rocket.phar
 
 # notify
 cat example.txt | ./rocket.phar --config ./rocket.json --notify
+```
+
+## Update
+
+```bash
+./rocket.phar --upgrade
 ```
