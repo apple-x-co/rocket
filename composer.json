@@ -41,7 +41,9 @@
     "tests": [
       "@cs",
       "@sa"
-    ]
+    ],
+    "post-install-cmd": "@composer bin all install --ansi",
+    "post-update-cmd": "@composer bin all update --ansi"
   },
   "scripts-descriptions": {
     "cs": "Check the coding style",
