@@ -222,10 +222,12 @@ class DeployCommand implements CommandInterface
 
                 if ($rsyncProcess->getOutput() !== null) {
                     foreach ($rsyncProcess->getOutput() as $output) {
-                        if (preg_match('/^building file/', $output) === 1 ||
+                        if (
+                            $output === '' ||
+                            preg_match('/^building file/', $output) === 1 ||
                             preg_match('/^sent \d+ bytes/', $output) === 1 ||
-                            preg_match('/^total size/', $output) === 1 ||
-                            $output === '') {
+                            preg_match('/^total size/', $output) === 1
+                        ) {
                             continue;
                         }
 
@@ -246,7 +248,9 @@ class DeployCommand implements CommandInterface
                         ->execute();
 
                     if ($customScriptProcess->isSuccess()) {
-                        $this->output->info($customScriptProcess->path() . ': ' . $customScriptProcess->getOutputString());
+                        $this->output->info(
+                            $customScriptProcess->path() . ': ' . $customScriptProcess->getOutputString()
+                        );
                     } else {
                         $this->output->error($customScriptProcess->getOutputString());
                     }
