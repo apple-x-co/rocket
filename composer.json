@@ -20,12 +20,18 @@
   "require-dev": {
     "phpcompatibility/php-compatibility": "^9.3",
     "phpstan/phpstan": "^1.8",
+    "phpunit/phpunit": "^9.5",
     "squizlabs/php_codesniffer": "^3.7",
     "vimeo/psalm": "^4.24"
   },
   "autoload": {
     "psr-4": {
       "Rocket\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Rocket\\": "tests/"
     }
   },
   "scripts": {
@@ -38,9 +44,11 @@
       "./vendor/bin/phpstan analyse -c phpstan.neon",
       "psalm --show-info=true"
     ],
+    "test": "./vendor/bin/phpunit",
     "tests": [
       "@cs",
-      "@sa"
+      "@sa",
+      "@test"
     ],
     "post-install-cmd": "[ $COMPOSER_DEV_MODE -eq 0 ] || \"vendor/bin/phpcs\" --config-set installed_paths vendor/phpcompatibility/php-compatibility",
     "post-update-cmd": "[ $COMPOSER_DEV_MODE -eq 0 ] || \"vendor/bin/phpcs\" --config-set installed_paths vendor/phpcompatibility/php-compatibility"
