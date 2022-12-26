@@ -20,6 +20,7 @@ use Rocket\Slack\BlockKit\Element\MarkdownText as SlackMarkdownText;
 use Rocket\Slack\BlockKit\Element\PlainText as SlackPlainText;
 use Rocket\Slack\BlockKit\Message as SlackMessage;
 use Rocket\Version;
+use RuntimeException;
 
 class DeployCommand implements CommandInterface
 {
@@ -42,22 +43,35 @@ class DeployCommand implements CommandInterface
     public function execute()
     {
         $configPath = realpath($this->options->getConfig());
+        if (! is_string($configPath)) {
+            throw new RuntimeException();
+        }
+
         $configure = new Configure($configPath);
 
-        $chunker = new Chunker();
+        $userinfo = posix_getpwuid(posix_geteuid());
+        if (! is_array($userinfo) || ! isset($userinfo['name'])) {
+            throw new RuntimeException();
+        }
 
-        $self = $this;
-
-        if (posix_getpwuid(posix_geteuid())['name'] !== $configure->read('user')) {
+        if ($userinfo['name'] !== $configure->read('user')) {
             $this->output->error('can not executed user.');
 
             return;
         }
 
+        $chunker = new Chunker();
+
+        $self = $this;
+
         // GIT
         $gitPullLog = null;
         if ($this->options->getGit() === 'pull') {
             $dir = $configure->read('source.directory');
+            if (! is_string($dir)) {
+                throw new RuntimeException();
+            }
+
             if (! is_dir($dir)) {
                 $this->output->error($dir . ': no such file or directory');
 
@@ -82,15 +96,15 @@ class DeployCommand implements CommandInterface
 
             if (! $checkProcess->isSuccess()) {
                 $this->output->plain('$ ' . $checkProcess->string());
-                $this->output->error($checkProcess->getOutputString());
+                $this->output->error($checkProcess->getOutputAsString());
 
                 return;
             }
 
             $this->output->plain('$ ' . $checkProcess->string());
-            $this->output->plain($checkProcess->getOutputString());
+            $this->output->plain($checkProcess->getOutputAsString());
 
-            if (strpos($checkProcess->getOutputString(), 'local out of date') === false) {
+            if (strpos($checkProcess->getOutputAsString(), 'local out of date') === false) {
                 $this->output->info('the directory is up to date.');
 
                 return;
@@ -113,15 +127,15 @@ class DeployCommand implements CommandInterface
 
             if (! $gitPullProcess->isSuccess()) {
                 $this->output->plain('$ ' . $gitPullProcess->string());
-                $this->output->error($gitPullProcess->getOutputString());
+                $this->output->error($gitPullProcess->getOutputAsString());
 
                 return;
             }
 
             $this->output->plain('$ ' . $gitPullProcess->string());
-            $this->output->info($gitPullProcess->getOutputString());
+            $this->output->info($gitPullProcess->getOutputAsString());
 
-            $gitPullLog = $gitPullProcess->getOutputString();
+            $gitPullLog = $gitPullProcess->getOutputAsString();
         }
 
         // FILE SYNC
@@ -130,15 +144,24 @@ class DeployCommand implements CommandInterface
         if ($this->options->hasSync()) {
             $sync = $this->options->getSync();
             $destinations = $configure->read('destinations');
+            if (! is_array($destinations)) {
+                throw new RuntimeException();
+            }
+
             foreach ($destinations as $destination) {
                 $from = $destination['from'];
                 $to = $destination['to'];
                 $excludes = isset($destination['excludes']) ? $destination['excludes'] : [];
                 $scripts = isset($destination['scripts']) ? $destination['scripts'] : [];
 
+                $rsyncOption = $configure->read('rsync.option');
+                if ($rsyncOption !== null && ! is_string($rsyncOption)) {
+                    throw new RuntimeException();
+                }
+
                 $rsyncProcess = Process::define($configure->read('rsync.path', '/usr/bin/rsync'));
                 $rsyncProcess
-                    ->addArgument($configure->read('rsync.option'))
+                    ->addArgument($rsyncOption)
                     ->addArgument($from)
                     ->addArgument($to)
                     ->setSubscribeEvent(ProcessEvents::BEFORE_EXECUTION, function ($command) use ($self) {
@@ -161,10 +184,10 @@ class DeployCommand implements CommandInterface
                             ->execute();
                         if ($rsyncProcess->isSuccess()) {
                             $this->output->plain('$ ' . $rsyncProcess->string());
-                            $this->output->info($rsyncProcess->getOutputString());
+                            $this->output->info($rsyncProcess->getOutputAsString());
                         } else {
                             $this->output->plain('$ ' . $rsyncProcess->string());
-                            $this->output->error($rsyncProcess->getOutputString());
+                            $this->output->error($rsyncProcess->getOutputAsString());
                         }
 
                         break;
@@ -173,13 +196,13 @@ class DeployCommand implements CommandInterface
                         $rsyncProcess
                             ->execute();
                         if ($rsyncProcess->isSuccess()) {
-                            $syncLog .= $rsyncProcess->getOutputString();
+                            $syncLog .= $rsyncProcess->getOutputAsString();
                             $this->output->plain('$ ' . $rsyncProcess->string());
-                            $this->output->info($rsyncProcess->getOutputString());
+                            $this->output->info($rsyncProcess->getOutputAsString());
                         } else {
                             $isError = true;
                             $this->output->plain('$ ' . $rsyncProcess->string());
-                            $this->output->error($rsyncProcess->getOutputString());
+                            $this->output->error($rsyncProcess->getOutputAsString());
                         }
 
                         break;
@@ -192,24 +215,29 @@ class DeployCommand implements CommandInterface
                             ->execute();
                         if ($rsyncDryProcess->isSuccess()) {
                             $this->output->plain('$ ' . $rsyncDryProcess->string());
-                            $this->output->info($rsyncDryProcess->getOutputString());
+                            $this->output->info($rsyncDryProcess->getOutputAsString());
                         } else {
                             $isError = true;
                             $this->output->plain('$ ' . $rsyncDryProcess->string());
-                            $this->output->error($rsyncDryProcess->getOutputString());
+                            $this->output->error($rsyncDryProcess->getOutputAsString());
                         }
 
                         echo 'Do you want to synchronize? [y/N]' . PHP_EOL;
-                        if (trim(fgets(STDIN)) === 'y') {
+                        $input = fgets(STDIN);
+                        if (! is_string($input)) {
+                            throw new RuntimeException();
+                        }
+
+                        if (trim($input) === 'y') {
                             $rsyncProcess->execute();
                             if ($rsyncProcess->isSuccess()) {
-                                $syncLog .= $rsyncProcess->getOutputString();
+                                $syncLog .= $rsyncProcess->getOutputAsString();
                                 $this->output->plain('$ ' . $rsyncProcess->string());
-                                $this->output->info($rsyncProcess->getOutputString());
+                                $this->output->info($rsyncProcess->getOutputAsString());
                             } else {
                                 $isError = true;
                                 $this->output->plain('$ ' . $rsyncProcess->string());
-                                $this->output->error($rsyncProcess->getOutputString());
+                                $this->output->error($rsyncProcess->getOutputAsString());
                             }
                         }
 
@@ -249,10 +277,10 @@ class DeployCommand implements CommandInterface
 
                     if ($customScriptProcess->isSuccess()) {
                         $this->output->info(
-                            $customScriptProcess->path() . ': ' . $customScriptProcess->getOutputString()
+                            $customScriptProcess->path() . ': ' . $customScriptProcess->getOutputAsString()
                         );
                     } else {
-                        $this->output->error($customScriptProcess->getOutputString());
+                        $this->output->error($customScriptProcess->getOutputAsString());
                     }
                 }
             }
@@ -263,7 +291,12 @@ class DeployCommand implements CommandInterface
             return;
         }
 
-        $message = new SlackMessage('Deploy successful', $configure->read('slack.icon', ':sparkles:'));
+        $slackIcon = $configure->read('slack.icon', ':sparkles:');
+        if (! is_string($slackIcon)) {
+            throw new RuntimeException();
+        }
+
+        $message = new SlackMessage('Deploy successful', $slackIcon);
         $message
             ->addBlock(
                 new SlackHeader(new SlackPlainText('Deploy successful'))
@@ -348,15 +381,28 @@ class DeployCommand implements CommandInterface
                     )
             );
 
-        $slack = new Slack(
-            $configure->read('slack.incomingWebhook'),
-            $configure->read('slack.channel'),
-            $configure->read('slack.username'),
-            $this->http
-        );
+        $slackIncomingWebhook = $configure->read('slack.incomingWebhook');
+        if (! is_string($slackIncomingWebhook)) {
+            throw new RuntimeException();
+        }
+
+        $slackChannel = $configure->read('slack.channel');
+        if ($slackChannel !== null && ! is_string($slackChannel)) {
+            throw new RuntimeException();
+        }
+
+        $slackUsername = $configure->read('slack.username');
+        if ($slackUsername !== null && ! is_string($slackUsername)) {
+            throw new RuntimeException();
+        }
+
+        $slack = new Slack($slackIncomingWebhook, $slackChannel, $slackUsername, $this->http);
         $slackResult = $slack->send($message);
         if (! $slackResult->isOk()) {
-            $this->output->error($slackResult->getError());
+            $error = $slackResult->getError();
+            if (is_string($error)) {
+                $this->output->error($error);
+            }
         }
     }
 }

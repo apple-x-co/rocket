@@ -12,7 +12,7 @@ class Process
     /** @var array */
     private $arguments = [];
 
-    /** @var mixed */
+    /** @var array|null */
     private $output = null;
 
     /** @var mixed */
@@ -53,7 +53,7 @@ class Process
     }
 
     /**
-     * @param string $arg1
+     * @param string|null $arg1
      * @param string|int|null $arg2
      * @param string $operator
      *
@@ -135,7 +135,7 @@ class Process
     }
 
     /**
-     * @return mixed
+     * @return array<string>
      */
     public function getOutput()
     {
@@ -145,7 +145,7 @@ class Process
     /**
      * @return string
      */
-    public function getOutputString()
+    public function getOutputAsString()
     {
         $string = '';
         foreach ($this->output as $output) {
