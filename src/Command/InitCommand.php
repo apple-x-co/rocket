@@ -27,35 +27,19 @@ class InitCommand implements CommandInterface
 
         $content = null;
         if ($templateName === 'cakephp3') {
-            $cakephp3 = file_get_contents(__DIR__ . '/../config/cakephp3.json');
-            if (is_string($cakephp3)) {
-                $content = $cakephp3;
-            }
+            $content = (string)file_get_contents(__DIR__ . '/../config/cakephp3.json');
         }
 
         if ($templateName === 'eccube4') {
-            $eccube4 = file_get_contents(__DIR__ . '/../config/eccube4.json');
-            if (is_string($eccube4)) {
-                $content = $eccube4;
-            }
+            $content = (string)file_get_contents(__DIR__ . '/../config/eccube4.json');
         }
 
         if ($templateName === 'wordpress') {
-            $wordpress = file_get_contents(__DIR__ . '/../config/wordpress.json');
-            if (is_string($wordpress)) {
-                $content = $wordpress;
-            }
+            $content = (string)file_get_contents(__DIR__ . '/../config/wordpress.json');
         }
 
         if ($content === null) {
-            $plain = file_get_contents(__DIR__ . '/../config/plain.json');
-            if (is_string($plain)) {
-                $content = $plain;
-            }
-        }
-
-        if (! is_string($content)) {
-            throw new RuntimeException();
+            $content = (string)file_get_contents(__DIR__ . '/../config/plain.json');
         }
 
         $this->output->plain($content);
