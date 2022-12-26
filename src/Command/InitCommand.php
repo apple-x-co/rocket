@@ -5,6 +5,7 @@ namespace Rocket\Command;
 use Rocket\CommandInterface;
 use Rocket\Options;
 use Rocket\OutputInterface;
+use RuntimeException;
 
 class InitCommand implements CommandInterface
 {
@@ -26,19 +27,35 @@ class InitCommand implements CommandInterface
 
         $content = null;
         if ($templateName === 'cakephp3') {
-            $content = file_get_contents(__DIR__ . '/../config/cakephp3.json');
+            $cakephp3 = file_get_contents(__DIR__ . '/../config/cakephp3.json');
+            if (is_string($cakephp3)) {
+                $content = $cakephp3;
+            }
         }
 
         if ($templateName === 'eccube4') {
-            $content = file_get_contents(__DIR__ . '/../config/eccube4.json');
+            $eccube4 = file_get_contents(__DIR__ . '/../config/eccube4.json');
+            if (is_string($eccube4)) {
+                $content = $eccube4;
+            }
         }
 
         if ($templateName === 'wordpress') {
-            $content = file_get_contents(__DIR__ . '/../config/wordpress.json');
+            $wordpress = file_get_contents(__DIR__ . '/../config/wordpress.json');
+            if (is_string($wordpress)) {
+                $content = $wordpress;
+            }
         }
 
         if ($content === null) {
-            $content = file_get_contents(__DIR__ . '/../config/plain.json');
+            $plain = file_get_contents(__DIR__ . '/../config/plain.json');
+            if (is_string($plain)) {
+                $content = $plain;
+            }
+        }
+
+        if (! is_string($content)) {
+            throw new RuntimeException();
         }
 
         $this->output->plain($content);
