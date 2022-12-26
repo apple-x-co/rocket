@@ -9,7 +9,7 @@ class Configure
 {
     const VERSION = '1.1';
 
-    /** @var array  */
+    /** @var array<array-key, mixed>  */
     private $config;
 
     /** @var string */
@@ -24,12 +24,14 @@ class Configure
     {
         $this->configPath = $configPath;
 
-        $config = json_decode(file_get_contents($configPath), true);
+        $config = json_decode((string)file_get_contents($configPath), true);
         if ($config === false) {
             throw new RuntimeException('config format error.');
         }
 
-        $this->config = $config;
+        if (is_array($config)) {
+            $this->config = $config;
+        }
 
         if ($this->read('version') !== self::VERSION) {
             throw new RuntimeException('not supported version.');
@@ -43,15 +45,13 @@ class Configure
      */
     public static function verify($configPath)
     {
-        $isValid = true;
-
         try {
-            $instance = new static($configPath);
+            $_ = new Configure($configPath);
         } catch (RuntimeException $e) {
-            $isValid = false;
+            return false;
         }
 
-        return $isValid;
+        return true;
     }
 
     /**
@@ -74,10 +74,10 @@ class Configure
     }
 
     /**
-     * @param string $key
-     * @param string|int|null $default
+     * @param string|null $key
+     * @param callable|string|int|null $default
      *
-     * @return array|string|int|null
+     * @return array<array-key, mixed>|mixed
      */
     private function get($key, $default)
     {
