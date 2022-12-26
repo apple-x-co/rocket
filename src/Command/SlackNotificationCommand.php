@@ -15,6 +15,7 @@ use Rocket\Slack\BlockKit\Block\Section as SlackSection;
 use Rocket\Slack\BlockKit\Element\MarkdownText as SlackMarkdownText;
 use Rocket\Slack\BlockKit\Message as SlackMessage;
 use Rocket\Version;
+use RuntimeException;
 
 class SlackNotificationCommand implements CommandInterface
 {
@@ -33,6 +34,10 @@ class SlackNotificationCommand implements CommandInterface
     public function execute()
     {
         $configPath = realpath($this->options->getConfig());
+        if (! is_string($configPath)) {
+            throw new RuntimeException();
+        }
+
         $configure = new Configure($configPath);
 
         $content = null;
@@ -40,19 +45,25 @@ class SlackNotificationCommand implements CommandInterface
             $content .= $line;
         }
 
-        $message = new SlackMessage('Rocket notification', $configure->read('slack.icon', ':sparkles:'));
+        $slackIcon = $configure->read('slack.icon', ':sparkles:');
+        if (! is_string($slackIcon)) {
+            throw new RuntimeException();
+        }
 
-        $chunker = new Chunker();
-        $chunks = $chunker($content, SlackSection::TEXT_MAX_LENGTH - 6);
+        $message = new SlackMessage('Rocket notification', $slackIcon);
 
-        foreach ($chunks as $chunk) {
-            $message
-                ->addBlock(
-                    (new SlackSection())
-                        ->setText(
-                            new SlackMarkdownText($chunk)
-                        )
-                );
+        if (is_string($content)) {
+            $chunker = new Chunker();
+            $chunks = $chunker($content, SlackSection::TEXT_MAX_LENGTH - 6);
+            foreach ($chunks as $chunk) {
+                $message
+                    ->addBlock(
+                        (new SlackSection())
+                            ->setText(
+                                new SlackMarkdownText($chunk)
+                            )
+                    );
+            }
         }
 
         $message
@@ -72,12 +83,22 @@ class SlackNotificationCommand implements CommandInterface
                     )
             );
 
-        $slack = new Slack(
-            $configure->read('slack.incomingWebhook'),
-            $configure->read('slack.channel'),
-            $configure->read('slack.username'),
-            $this->http
-        );
+        $slackIncomingWebhook = $configure->read('slack.incomingWebhook');
+        if (! is_string($slackIncomingWebhook)) {
+            throw new RuntimeException();
+        }
+
+        $slackChannel = $configure->read('slack.channel');
+        if ($slackChannel !== null && ! is_string($slackChannel)) {
+            throw new RuntimeException();
+        }
+
+        $slackUsername = $configure->read('slack.username');
+        if ($slackUsername !== null && ! is_string($slackUsername)) {
+            throw new RuntimeException();
+        }
+
+        $slack = new Slack($slackIncomingWebhook, $slackChannel, $slackUsername, $this->http);
         $slack->send($message);
     }
 }
