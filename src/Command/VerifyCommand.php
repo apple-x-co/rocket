@@ -6,6 +6,7 @@ use Rocket\CommandInterface;
 use Rocket\Configure;
 use Rocket\Options;
 use Rocket\OutputInterface;
+use RuntimeException;
 
 class VerifyCommand implements CommandInterface
 {
@@ -24,6 +25,9 @@ class VerifyCommand implements CommandInterface
     public function execute()
     {
         $configPath = realpath($this->options->getConfig());
+        if (! is_string($configPath)) {
+            throw new RuntimeException();
+        }
 
         if (Configure::verify($configPath)) {
             $this->output->info($configPath . ': OK');
