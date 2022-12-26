@@ -7,6 +7,7 @@ use Rocket\Configure;
 use Rocket\Http;
 use Rocket\Options;
 use Rocket\Slack;
+use RuntimeException;
 
 class SlackNotificationTestCommand implements CommandInterface
 {
@@ -25,14 +26,28 @@ class SlackNotificationTestCommand implements CommandInterface
     public function execute()
     {
         $configPath = realpath($this->options->getConfig());
+        if (! is_string($configPath)) {
+            throw new RuntimeException();
+        }
+
         $configure = new Configure($configPath);
 
-        $slack = new Slack(
-            $configure->read('slack.incomingWebhook'),
-            $configure->read('slack.channel'),
-            $configure->read('slack.username'),
-            $this->http
-        );
+        $slackIncomingWebhook = $configure->read('slack.incomingWebhook');
+        if (! is_string($slackIncomingWebhook)) {
+            throw new RuntimeException();
+        }
+
+        $slackChannel = $configure->read('slack.channel');
+        if ($slackChannel !== null && ! is_string($slackChannel)) {
+            throw new RuntimeException();
+        }
+
+        $slackUsername = $configure->read('slack.username');
+        if ($slackUsername !== null && ! is_string($slackUsername)) {
+            throw new RuntimeException();
+        }
+
+        $slack = new Slack($slackIncomingWebhook, $slackChannel, $slackUsername, $this->http);
 
         $slack->test($configure);
     }
