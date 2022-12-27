@@ -2,20 +2,13 @@
 
 namespace Rocket;
 
+use RuntimeException;
+
 class Options
 {
-    /** @var array */
+    /** @var array<string, mixed> */
     private $options = null;
 
-    private $SUPPORTED_TLS_VERSIONS = [
-        'TLSv1_0',
-        'TLSv1_1',
-        'TLSv1_2',
-    ];
-
-    /**
-     * Options constructor.
-     */
     public function __construct()
     {
         $options = getopt('c:g:s:i:hnuv', [
@@ -36,6 +29,10 @@ class Options
             'verify',
         ]);
 
+        if (! is_array($options)) {
+            throw new RuntimeException();
+        }
+
         $this->options = $options;
     }
 
@@ -51,9 +48,9 @@ class Options
 
     /**
      * @param string $key
-     * @param int|string|null $default
+     * @param mixed $default
      *
-     * @return int|string
+     * @return mixed
      */
     private function get($key, $default = null)
     {
@@ -121,7 +118,12 @@ class Options
      */
     public function getInit()
     {
-        return $this->get('init', $this->get('i', 'plain'));
+        $init = $this->get('init', $this->get('i', 'plain'));
+        if (! is_string($init)) {
+            throw new RuntimeException();
+        }
+
+        return $init;
     }
 
     /**
@@ -137,7 +139,12 @@ class Options
      */
     public function getConfig()
     {
-        return $this->get('config', $this->get('c'));
+        $config = $this->get('config', $this->get('c'));
+        if (! is_string($config)) {
+            throw new RuntimeException();
+        }
+
+        return $config;
     }
 
     /**
@@ -145,7 +152,12 @@ class Options
      */
     public function getGit()
     {
-        return $this->get('git', $this->get('g'));
+        $git = $this->get('git', $this->get('g'));
+        if (! is_string($git)) {
+            throw new RuntimeException();
+        }
+
+        return $git;
     }
 
     /**
@@ -161,7 +173,12 @@ class Options
      */
     public function getSync()
     {
-        return $this->get('sync', $this->get('s'));
+        $sync = $this->get('sync', $this->get('s'));
+        if (! is_string($sync)) {
+            throw new RuntimeException();
+        }
+
+        return $sync;
     }
 
     /**
@@ -177,7 +194,12 @@ class Options
      */
     public function getUnzip()
     {
-        return $this->get('unzip');
+        $unzip = $this->get('unzip');
+        if (! is_string($unzip)) {
+            throw new RuntimeException();
+        }
+
+        return $unzip;
     }
 
     /**
@@ -197,13 +219,16 @@ class Options
     }
 
     /**
-     * @return 'TLSv1_0'|'TLSv1_1'|'TLSv1_2'|null
+     * @return string
      */
     public function getTls()
     {
         $tls = $this->get('ssl');
+        if (! is_string($tls)) {
+            throw new RuntimeException();
+        }
 
-        return in_array($tls, $this->SUPPORTED_TLS_VERSIONS, true) ? $tls : null;
+        return $tls;
     }
 
     /**
