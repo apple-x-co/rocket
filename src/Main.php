@@ -12,6 +12,7 @@ use Rocket\Command\SlackNotificationTestCommand;
 use Rocket\Command\UpgradeCommand;
 use Rocket\Command\UsageCommand;
 use Rocket\Command\VerifyCommand;
+use RuntimeException;
 
 class Main
 {
@@ -26,10 +27,13 @@ class Main
         $this->options = $options;
     }
 
+    /**
+     * @return void
+     */
     public function run()
     {
         $output = $this->options->hasNoColor() ? new Output() : new ColorOutput();
-        $http = (new Http($this->options->hasSsl() ? $this->options->getSsl() : null));
+        $http = (new Http($this->options->hasTls() ? $this->options->getTls() : null));
 
         $command = null;
 
@@ -51,6 +55,10 @@ class Main
 
         if ($this->options->hasConfig()) {
             $configPath = realpath($this->options->getConfig());
+            if (! is_string($configPath)) {
+                throw new RuntimeException();
+            }
+
             if (file_exists($configPath)) {
                 if ($this->options->hasVerify()) {
                     $command = new VerifyCommand($this->options, $output);

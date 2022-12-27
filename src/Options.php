@@ -7,6 +7,12 @@ class Options
     /** @var array */
     private $options = null;
 
+    private $SUPPORTED_TLS_VERSIONS = [
+        'TLSv1_0',
+        'TLSv1_1',
+        'TLSv1_2',
+    ];
+
     /**
      * Options constructor.
      */
@@ -185,17 +191,19 @@ class Options
     /**
      * @return bool
      */
-    public function hasSsl()
+    public function hasTls()
     {
         return $this->has('ssl');
     }
 
     /**
-     * @return string|null
+     * @return 'TLSv1_0'|'TLSv1_1'|'TLSv1_2'|null
      */
-    public function getSsl()
+    public function getTls()
     {
-        return $this->get('ssl');
+        $tls = $this->get('ssl');
+
+        return in_array($tls, $this->SUPPORTED_TLS_VERSIONS, true) ? $tls : null;
     }
 
     /**
