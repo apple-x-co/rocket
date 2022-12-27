@@ -40,7 +40,11 @@ class EscapeSequence
         'red' => self::FOREGROUND_RED,
         'cyan' => self::FOREGROUND_CYAN,
         'magenta' => self::FOREGROUND_MAGENTA,
+        'bg-black' => self::BACKGROUND_BLACK,
         'bg-white' => self::BACKGROUND_WHITE,
+        'bg-red' => self::BACKGROUND_RED,
+        'bg-cyan' => self::BACKGROUND_CYAN,
+        'bg-magenta' => self::BACKGROUND_MAGENTA,
     ];
 
     /** @var array<array-key, string> */
@@ -60,9 +64,9 @@ class EscapeSequence
     private $options;
 
     /**
-     * @param string|null              $foreground
-     * @param string|null              $background
-     * @param array<array-key, string> $options
+     * @param 'black'|'white'|'red'|'cyan'|'magenta'|'bg-white'|'bg-black'|'bg-red'|'bg-cyan'|'bg-magenta'|null $foreground
+     * @param 'black'|'white'|'red'|'cyan'|'magenta'|'bg-white'|'bg-black'|'bg-red'|'bg-cyan'|'bg-magenta'|null $background
+     * @param array<array-key> $options
      */
     public function __construct($foreground, $background = null, array $options = [])
     {
