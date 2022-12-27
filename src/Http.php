@@ -2,20 +2,27 @@
 
 namespace Rocket;
 
+use RuntimeException;
+
 class Http
 {
     /** @var 'TLSv1_0'|'TLSv1_1'|'TLSv1_2'|null */
-    private $ssl;
+    private $tlsVersion;
 
     /**
-     * @param string|null $ssl
+     * @param 'TLSv1_0'|'TLSv1_1'|'TLSv1_2'|null $tlsVersion
      */
-    public function __construct($ssl)
+    public function __construct($tlsVersion = null)
     {
-        $this->ssl = $ssl;
+        $this->tlsVersion = $tlsVersion;
     }
 
-    public function setupCurl($ch)
+    /**
+     * @param resource $ch
+     *
+     * @return void
+     */
+    private function setupCurl($ch)
     {
         //curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         //curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
@@ -27,17 +34,17 @@ class Http
             'User-Agent: rocket.phar/' . Version::ROCKET_VERSION
         ]);
 
-        if ($this->ssl === null) {
+        if ($this->tlsVersion === null) {
             return;
         }
 
-        if ($this->ssl === 'TLSv1_0' && defined('CURL_SSLVERSION_TLSv1_0')) {
+        if ($this->tlsVersion === 'TLSv1_0' && defined('CURL_SSLVERSION_TLSv1_0')) {
             curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
         }
-        if ($this->ssl === 'TLSv1_1' && defined('CURL_SSLVERSION_TLSv1_1')) {
+        if ($this->tlsVersion === 'TLSv1_1' && defined('CURL_SSLVERSION_TLSv1_1')) {
             curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
         }
-        if ($this->ssl === 'TLSv1_2' && defined('CURL_SSLVERSION_TLSv1_2')) {
+        if ($this->tlsVersion === 'TLSv1_2' && defined('CURL_SSLVERSION_TLSv1_2')) {
             curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
         }
     }
@@ -45,11 +52,14 @@ class Http
     /**
      * @param string $url
      *
-     * @return false|resource
+     * @return resource
      */
     public function download($url)
     {
         $tempfile = tmpfile();
+        if ($tempfile === false) {
+            throw new RuntimeException();
+        }
 
         $ch = curl_init();
         $this->setupCurl($ch);
@@ -58,7 +68,7 @@ class Http
         //curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
         curl_setopt($ch, CURLOPT_FILE, $tempfile);
 
-        $result = curl_exec($ch);
+        curl_exec($ch);
         curl_close($ch);
 
         return $tempfile;
@@ -84,9 +94,9 @@ class Http
     }
 
     /**
-     * @param string $url
-     * @param string $contentType
-     * @param array  $data
+     * @param string                  $url
+     * @param string                  $contentType
+     * @param array<array-key, mixed> $data
      *
      * @return bool|string
      */
