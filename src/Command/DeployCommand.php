@@ -79,7 +79,12 @@ class DeployCommand implements CommandInterface
             }
 
             // GIT REMOTE SHOW
-            $checkProcess = Process::define($configure->read('git.path', '/usr/bin/git'));
+            $gitPath = $configure->read('git.path', '/usr/bin/git');
+            if (! is_string($gitPath)) {
+                throw new RuntimeException();
+            }
+
+            $checkProcess = Process::define($gitPath);
             $checkProcess
                 ->addArgument('--git-dir', $dir . '.git', '=')
                 ->addArgument('--work-tree', $dir, '=')
@@ -111,7 +116,7 @@ class DeployCommand implements CommandInterface
             }
 
             // GIT PULL WITH PRUNE
-            $gitPullProcess = Process::define($configure->read('git.path', '/usr/bin/git'));
+            $gitPullProcess = Process::define($gitPath);
             $gitPullProcess
                 ->addArgument('--git-dir', $dir . '.git', '=')
                 ->addArgument('--work-tree', $dir, '=')
@@ -159,7 +164,12 @@ class DeployCommand implements CommandInterface
                     throw new RuntimeException();
                 }
 
-                $rsyncProcess = Process::define($configure->read('rsync.path', '/usr/bin/rsync'));
+                $rsyncPath = $configure->read('rsync.path', '/usr/bin/rsync');
+                if (! is_string($rsyncPath)) {
+                    throw new RuntimeException();
+                }
+
+                $rsyncProcess = Process::define($rsyncPath);
                 $rsyncProcess
                     ->addArgument($rsyncOption)
                     ->addArgument($from)

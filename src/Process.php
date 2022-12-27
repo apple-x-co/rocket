@@ -9,10 +9,10 @@ class Process
     /** @var string */
     private $command_path = null;
 
-    /** @var array */
+    /** @var array<int, array{0:string|null, 1:string|int|null, 2:string|null}> */
     private $arguments = [];
 
-    /** @var array|null */
+    /** @var array<string>|null */
     private $output = null;
 
     /** @var mixed */
@@ -22,7 +22,7 @@ class Process
     private $events = [];
 
     /**
-     * @param $path
+     * @param string $path
      *
      * @return Process
      * @throws Exception
@@ -33,7 +33,7 @@ class Process
             throw new \Exception('not found path. (' . $path . ')');
         }
 
-        $instance = new static();
+        $instance = new self();
         $instance->command_path = $path;
 
         return $instance;
@@ -41,9 +41,9 @@ class Process
 
     /**
      * @param string $name
-     * @param callable $function
+     * @param callable $callable
      *
-     * @return $this
+     * @return self
      */
     public function setSubscribeEvent($name, $callable)
     {
@@ -55,9 +55,9 @@ class Process
     /**
      * @param string|null $arg1
      * @param string|int|null $arg2
-     * @param string $operator
+     * @param string|null $operator
      *
-     * @return $this
+     * @return self
      */
     public function addArgument($arg1, $arg2 = null, $operator = null)
     {
@@ -96,7 +96,7 @@ class Process
     }
 
     /**
-     *
+     * @return string
      */
     public function path()
     {
@@ -104,7 +104,7 @@ class Process
     }
 
     /**
-     *
+     * @return string
      */
     public function string()
     {
@@ -112,7 +112,7 @@ class Process
     }
 
     /**
-     *
+     * @return void
      */
     public function execute()
     {
@@ -139,7 +139,7 @@ class Process
      */
     public function getOutput()
     {
-        return $this->output;
+        return $this->output === null ? [] : $this->output;
     }
 
     /**
@@ -148,10 +148,10 @@ class Process
     public function getOutputAsString()
     {
         $string = '';
-        foreach ($this->output as $output) {
+        foreach ($this->getOutput() as $output) {
             $string .= $output . PHP_EOL;
         }
 
-        return $string;
+        return rtrim($string);
     }
 }
