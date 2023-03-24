@@ -4,15 +4,20 @@ namespace Rocket;
 
 class Http
 {
-    /** @var 'IGNORE_VERIFY'|'TLSv1_0'|'TLSv1_1'|'TLSv1_2'|'TLSv1_3'|null */
+    /** @var 'TLSv1_0'|'TLSv1_1'|'TLSv1_2'|'TLSv1_3'|null */
     private $ssl;
+
+    /** @var bool */
+    private $ignoreVerify;
 
     /**
      * @param string|null $ssl
+     * @param bool        $ignoreVerify
      */
-    public function __construct($ssl)
+    public function __construct($ssl, $ignoreVerify = true)
     {
         $this->ssl = $ssl;
+        $this->ignoreVerify = $ignoreVerify;
     }
 
     public function setupCurl($ch)
@@ -29,7 +34,7 @@ class Http
             return;
         }
 
-        if ($this->ssl === 'IGNORE_VERIFY') {
+        if ($this->ignoreVerify) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         }
