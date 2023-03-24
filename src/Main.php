@@ -61,7 +61,7 @@ class Main
                 }
 
                 if ($this->options->hasNotifyTest()) {
-                    $command = new SlackNotificationTestCommand($this->options, $http);
+                    $command = new SlackNotificationTestCommand($this->options, $output, $http);
                 }
 
                 if ($command === null) {
