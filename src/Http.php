@@ -4,7 +4,7 @@ namespace Rocket;
 
 class Http
 {
-    /** @var 'TLSv1_0'|'TLSv1_1'|'TLSv1_2'|null */
+    /** @var 'IGNORE_VERIFY'|'TLSv1_0'|'TLSv1_1'|'TLSv1_2'|'TLSv1_3'|null */
     private $ssl;
 
     /**
@@ -17,8 +17,6 @@ class Http
 
     public function setupCurl($ch)
     {
-        //curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        //curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_VERBOSE, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
@@ -31,6 +29,10 @@ class Http
             return;
         }
 
+        if ($this->ssl === 'IGNORE_VERIFY') {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        }
         if ($this->ssl === 'TLSv1_0' && defined('CURL_SSLVERSION_TLSv1_0')) {
             curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
         }
@@ -39,6 +41,9 @@ class Http
         }
         if ($this->ssl === 'TLSv1_2' && defined('CURL_SSLVERSION_TLSv1_2')) {
             curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+        }
+        if ($this->ssl === 'TLSv1_3' && defined('CURL_SSLVERSION_TLSv1_3')) {
+            curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3);
         }
     }
 
