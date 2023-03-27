@@ -66,8 +66,13 @@ class Updater
             return null;
         }
 
+        $version = $result['tag_name'];
+        if (strpos($version, 'v') === 0) {
+            $version = substr($version, 1);
+        }
+
         return [
-            'version' => $result['tag_name'],
+            'version' => $version,
             'url' => $result['assets'][0]['browser_download_url']
         ];
     }
