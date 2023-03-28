@@ -26,29 +26,53 @@ class Http
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'User-Agent: rocket.phar/' . Version::ROCKET_VERSION
-        ]);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['User-Agent: rocket.phar/' . Version::ROCKET_VERSION]);
+
+        if ($this->ignoreVerify) {
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        }
 
         if ($this->ssl === null) {
             return;
         }
 
-        if ($this->ignoreVerify) {
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        if ($this->ssl === 'TLSv1_0') {
+            if (defined('CURL_SSLVERSION_TLSv1_0')) {
+                curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
+            } else {
+                error_log('Not supported TLSv1_0', 3, 'php://stderr');
+            }
+
+            return;
         }
-        if ($this->ssl === 'TLSv1_0' && defined('CURL_SSLVERSION_TLSv1_0')) {
-            curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
+
+        if ($this->ssl === 'TLSv1_1') {
+            if (defined('CURL_SSLVERSION_TLSv1_1')) {
+                curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
+            } else {
+                error_log('Not supported TLSv1_1', 3, 'php://stderr');
+            }
+
+            return;
         }
-        if ($this->ssl === 'TLSv1_1' && defined('CURL_SSLVERSION_TLSv1_1')) {
-            curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
+
+        if ($this->ssl === 'TLSv1_2') {
+            if (defined('CURL_SSLVERSION_TLSv1_2')) {
+                curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+            } else {
+                error_log('Not supported TLSv1_2', 3, 'php://stderr');
+            }
+
+            return;
         }
-        if ($this->ssl === 'TLSv1_2' && defined('CURL_SSLVERSION_TLSv1_2')) {
-            curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
-        }
-        if ($this->ssl === 'TLSv1_3' && defined('CURL_SSLVERSION_TLSv1_3')) {
-            curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3);
+
+        if ($this->ssl === 'TLSv1_3') {
+            if (defined('CURL_SSLVERSION_TLSv1_3')) {
+                curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3);
+            } else {
+                error_log('Not supported TLSv1_3', 3, 'php://stderr');
+            }
         }
     }
 
