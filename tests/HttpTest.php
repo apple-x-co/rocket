@@ -31,7 +31,7 @@ class HttpTest extends TestCase
         $url = 'https://httpbin.org/base64/SFRUUEJJTiBpcyBhd2Vzb21l';
         $http = new Http();
         $tmpfile = $http->download($url);
-        self::assertIsResource($tmpfile);
+        self::assertTrue(is_resource($tmpfile));
         fseek($tmpfile, 0);
         $line = fread($tmpfile, 1024);
 
