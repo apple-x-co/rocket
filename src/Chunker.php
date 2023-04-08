@@ -5,8 +5,8 @@ namespace Rocket;
 class Chunker
 {
     /**
-     * @param string $text
-     * @param int    $chunkSize
+     * @param string      $text
+     * @param int<1, max> $chunkSize
      *
      * @return array<string>
      */

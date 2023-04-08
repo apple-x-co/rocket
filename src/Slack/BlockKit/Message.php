@@ -67,7 +67,7 @@ class Message
     }
 
     /**
-     * @return array
+     * @return array{blocks: array, text?: string, icon_emoji?: string}
      */
     public function toArray()
     {

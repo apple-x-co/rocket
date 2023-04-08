@@ -11,24 +11,23 @@ use Rocket\Slack\BlockKit\Element\MarkdownText;
 use Rocket\Slack\BlockKit\Element\PlainText;
 use Rocket\Slack\BlockKit\Message;
 use Rocket\Slack\SlackIncomingResult;
+use RuntimeException;
 
 class Slack
 {
     /** @var string */
     private $url = null;
 
-    /** @var string */
+    /** @var string|null */
     private $channel = null;
 
-    /** @var string */
+    /** @var string|null */
     private $username = null;
 
     /** @var Http|null */
     private $http = null;
 
     /**
-     * Slack constructor.
-     *
      * @param string      $url
      * @param string|null $channel
      * @param string|null $username
@@ -43,7 +42,7 @@ class Slack
     }
 
     /**
-     * @param array{channel: string, username: string, icon_emoji: string, blocks: array} $data
+     * @param array{channel: string, username: string, icon_emoji?: string, blocks: array<int, mixed>} $data
      *
      * @return SlackIncomingResult
      */
@@ -63,7 +62,7 @@ class Slack
             return new SlackIncomingResult(true);
         }
 
-        return new SlackIncomingResult(false, $result);
+        return new SlackIncomingResult(false, (string)$result);
     }
 
     /**
@@ -88,7 +87,12 @@ class Slack
      */
     public function test($configure)
     {
-        $message = new Message('Test', $configure->read('slack.icon', ':sparkles:'));
+        $slackIcon = $configure->read('slack.icon', ':sparkles:');
+        if (! is_string($slackIcon)) {
+            throw new RuntimeException();
+        }
+
+        $message = new Message('Test', $slackIcon);
         $message
             ->addBlock(
                 new Header(new PlainText('This is a test'))
