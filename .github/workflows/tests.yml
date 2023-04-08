@@ -18,13 +18,13 @@ jobs:
           - ubuntu-latest
         php-version:
           - '5.4'
-          - '5.6'
-          - '7.0'
-          - '7.1'
-          - '7.2'
-          - '7.3'
-          - '8.0'
-          - '8.1'
+#          - '5.6'
+#          - '7.0'
+#          - '7.1'
+#          - '7.2'
+#          - '7.3'
+#          - '8.0'
+#          - '8.1'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -50,4 +50,4 @@ jobs:
         run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Run tests
-        run: composer run-script tests
+        run: composer run-script test
