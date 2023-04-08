@@ -13,12 +13,12 @@ class ChunkerTest extends TestCase
         $chunker = new Chunker();
         $chunks = $chunker($text, 2);
 
-        self::assertSame($chunks[0], 'HE');
-        self::assertSame($chunks[1], 'LL');
-        self::assertSame($chunks[2], 'O ');
-        self::assertSame($chunks[3], 'WO');
-        self::assertSame($chunks[4], 'RL');
-        self::assertSame($chunks[5], 'D.');
+        self::assertSame('HE', $chunks[0]);
+        self::assertSame('LL', $chunks[1]);
+        self::assertSame('O ', $chunks[2]);
+        self::assertSame('WO', $chunks[3]);
+        self::assertSame('RL', $chunks[4]);
+        self::assertSame('D.', $chunks[5]);
     }
 
     public function testMultipleLine()
@@ -31,13 +31,13 @@ EOL;
         $chunker = new Chunker();
         $chunks = $chunker($text, 2);
 
-        self::assertSame($chunks[0], 'HE');
-        self::assertSame($chunks[1], 'LL');
-        self::assertSame($chunks[2], 'O!');
-        self::assertSame($chunks[3], '!' . PHP_EOL);
-        self::assertSame($chunks[4], 'WO');
-        self::assertSame($chunks[5], 'RL');
-        self::assertSame($chunks[6], 'D.');
+        self::assertSame('HE', $chunks[0]);
+        self::assertSame('LL', $chunks[1]);
+        self::assertSame('O!', $chunks[2]);
+        self::assertSame('!' . PHP_EOL, $chunks[3]);
+        self::assertSame('WO', $chunks[4]);
+        self::assertSame('RL', $chunks[5]);
+        self::assertSame('D.', $chunks[6]);
     }
 
     public function testMultibyteCharacterSingleLine()
@@ -47,10 +47,10 @@ EOL;
         $chunker = new Chunker();
         $chunks = $chunker($text, 2);
 
-        self::assertSame($chunks[0], 'こん');
-        self::assertSame($chunks[1], 'にち');
-        self::assertSame($chunks[2], 'は世');
-        self::assertSame($chunks[3], '界。');
+        self::assertSame('こん', $chunks[0]);
+        self::assertSame('にち', $chunks[1]);
+        self::assertSame('は世', $chunks[2]);
+        self::assertSame('界。', $chunks[3]);
     }
 
     public function testMultibyteCharacterMultipleLine()
@@ -63,11 +63,11 @@ EOL;
         $chunker = new Chunker();
         $chunks = $chunker($text, 2);
 
-        self::assertSame($chunks[0], 'こん');
-        self::assertSame($chunks[1], 'にち');
-        self::assertSame($chunks[2], 'は!');
-        self::assertSame($chunks[3], '!' . PHP_EOL);
-        self::assertSame($chunks[4], '世界');
-        self::assertSame($chunks[5], '。');
+        self::assertSame('こん', $chunks[0]);
+        self::assertSame('にち', $chunks[1]);
+        self::assertSame('は!', $chunks[2]);
+        self::assertSame('!' . PHP_EOL, $chunks[3]);
+        self::assertSame('世界', $chunks[4]);
+        self::assertSame('。', $chunks[5]);
     }
 }
