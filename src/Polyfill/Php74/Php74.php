@@ -1,6 +1,6 @@
 <?php
 
-namespace Rocket\Polyfill;
+namespace Rocket\Polyfill\Php74;
 
 class Php74
 {
