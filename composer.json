@@ -11,21 +11,30 @@
     "bin/rocket.php"
   ],
   "require": {
-    "php": "^5.4",
+    "php": "^5.4 || ^7.0 || ^8.0",
     "ext-curl": "*",
     "ext-json": "*",
     "ext-posix": "*",
     "ext-zip": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.5"
   },
   "autoload": {
     "psr-4": {
       "Rocket\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Rocket\\": "tests/"
+    }
+  },
   "scripts": {
     "information": "@php rocket.phar --info --no-color",
     "download-phar-composer": "curl --silent --show-error --location https://clue.engineering/phar-composer-latest.phar --output phar-composer.phar",
-    "build": "@php bin/build.php"
+    "build": "@php bin/build.php",
+    "test": "./vendor/bin/phpunit"
   },
   "config": {
     "sort-packages": true,

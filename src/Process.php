@@ -152,6 +152,6 @@ class Process
             $string .= $output . PHP_EOL;
         }
 
-        return $string;
+        return rtrim($string);
     }
 }
