@@ -33,6 +33,8 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
+          extensions: mbstring
+          tools: none
           coverage: none
 
       - name: Get composer cache directory
