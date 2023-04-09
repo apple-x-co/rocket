@@ -12,7 +12,7 @@ class Chunker
      */
     public function __invoke($text, $chunkSize)
     {
-        $chunks = mb_str_split($text, $chunkSize);
+        $chunks = mb_str_split($text, $chunkSize, 'UTF-8');
 
         return is_array($chunks) ? $chunks : [];
     }
