@@ -49,6 +49,9 @@ jobs:
           key: ${{ runner.os }}-php${{ matrix.php-version }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-php${{ matrix.php-version }}-composer-
 
+      - name: Unset platform.php
+        run: composer config --unset platform.php
+
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
