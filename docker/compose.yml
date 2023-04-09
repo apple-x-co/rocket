@@ -1,0 +1,18 @@
+services:
+  web:
+    image: ghcr.io/buddying-inc/webserver-centos83:apache24-php74
+    container_name: rocket
+    working_dir: /var/www/vhosts/localhost
+    volumes:
+      - type: bind
+        source: ../
+        target: /var/www/vhosts/localhost
+        consistency: delegated
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+    environment:
+      - PHP_XDEBUG=off
+      - COMPOSER_ALLOW_SUPERUSER=1

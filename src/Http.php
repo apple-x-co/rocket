@@ -5,18 +5,18 @@ namespace Rocket;
 class Http
 {
     /** @var 'TLSv1_0'|'TLSv1_1'|'TLSv1_2'|'TLSv1_3'|null */
-    private $ssl;
+    private $tlsVersion;
 
     /** @var bool */
     private $ignoreVerify;
 
     /**
-     * @param string|null $ssl
+     * @param string|null $tlsVersion
      * @param bool        $ignoreVerify
      */
-    public function __construct($ssl, $ignoreVerify = true)
+    public function __construct($tlsVersion = null, $ignoreVerify = true)
     {
-        $this->ssl = $ssl;
+        $this->tlsVersion = $tlsVersion;
         $this->ignoreVerify = $ignoreVerify;
     }
 
@@ -33,11 +33,11 @@ class Http
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
         }
 
-        if ($this->ssl === null) {
+        if ($this->tlsVersion === null) {
             return;
         }
 
-        if ($this->ssl === 'TLSv1_0') {
+        if ($this->tlsVersion === 'TLSv1_0') {
             if (defined('CURL_SSLVERSION_TLSv1_0')) {
                 curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
             } else {
@@ -47,7 +47,7 @@ class Http
             return;
         }
 
-        if ($this->ssl === 'TLSv1_1') {
+        if ($this->tlsVersion === 'TLSv1_1') {
             if (defined('CURL_SSLVERSION_TLSv1_1')) {
                 curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
             } else {
@@ -57,7 +57,7 @@ class Http
             return;
         }
 
-        if ($this->ssl === 'TLSv1_2') {
+        if ($this->tlsVersion === 'TLSv1_2') {
             if (defined('CURL_SSLVERSION_TLSv1_2')) {
                 curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
             } else {
@@ -67,7 +67,7 @@ class Http
             return;
         }
 
-        if ($this->ssl === 'TLSv1_3') {
+        if ($this->tlsVersion === 'TLSv1_3') {
             if (defined('CURL_SSLVERSION_TLSv1_3')) {
                 curl_setopt($ch, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_3);
             } else {

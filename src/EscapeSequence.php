@@ -40,6 +40,7 @@ class EscapeSequence
         'cyan' => self::FOREGROUND_CYAN,
         'magenta' => self::FOREGROUND_MAGENTA,
         'bg-white' => self::BACKGROUND_WHITE,
+        'bg-black' => self::BACKGROUND_BLACK,
     ];
 
     private static $OPTIONS = [

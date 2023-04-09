@@ -6,39 +6,14 @@ class Chunker
 {
     /**
      * @param string $text
-     * @param int $length
+     * @param int    $chunkSize
      *
      * @return array<string>
      */
-    public function __invoke($text, $length)
+    public function __invoke($text, $chunkSize)
     {
-        $chunks = [];
-        $buf = null;
+        $chunks = mb_str_split($text, $chunkSize, 'UTF-8');
 
-        $lines = explode(PHP_EOL, $text);
-        foreach ($lines as $line) {
-            if (strlen($line) >= $length) {
-                foreach (str_split($line, $length) as $chunk) {
-                    $chunks[] = $chunk;
-                }
-
-                continue;
-            }
-
-            $line .= PHP_EOL;
-
-            if (strlen($buf . $line) > $length) {
-                $chunks[] = $buf;
-                $buf = null;
-            }
-
-            $buf .= $line;
-        }
-
-        if ($buf !== null) {
-            $chunks[] = $buf;
-        }
-
-        return $chunks;
+        return is_array($chunks) ? $chunks : [];
     }
 }
