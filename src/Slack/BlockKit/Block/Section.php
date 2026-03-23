@@ -2,7 +2,8 @@
 
 namespace Rocket\Slack\BlockKit\Block;
 
-use Rocket\Slack\BlockKit\Element\MarkdownText;
+use Rocket\Slack\BlockKit\Element\Markdown;
+use Rocket\Slack\BlockKit\Element\Mrkdwn;
 use Rocket\Slack\BlockKit\Element\ElementInterface;
 use Rocket\Slack\BlockKit\Element\PlainText;
 
@@ -13,10 +14,10 @@ class Section implements BlockInterface
     const FIELD_TEXT_MAX_LENGTH = 2000;
     const FIELD_TEXT_MAX_ITEMS = 10;
 
-    /** @var PlainText|MarkdownText|null */
+    /** @var PlainText|Mrkdwn|Markdown|null */
     private $text;
 
-    /** @var PlainText[]|MarkdownText[]null */
+    /** @var PlainText[]|Mrkdwn[]|Markdown[]|null */
     private $fields;
 
     /** @var ElementInterface|null */
@@ -34,7 +35,7 @@ class Section implements BlockInterface
     }
 
     /**
-     * @param MarkdownText|PlainText $text
+     * @param Mrkdwn|Markdown|PlainText $text
      *
      * @return Section
      */
@@ -46,7 +47,7 @@ class Section implements BlockInterface
     }
 
     /**
-     * @param PlainText|MarkdownText $field
+     * @param PlainText|Markdown|Mrkdwn $field
      *
      * @return Section
      */

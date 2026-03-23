@@ -1,72 +1,183 @@
 # rocket
 
-## Requirement
+rsync によるファイル同期・Git pull・Slack 通知を組み合わせた、PHP 製のデプロイ CLI ツールです。
 
-* PHP version 5.4.0 or greater.
+## ✨ Features
 
-## Installation
+- **rsync によるファイル同期** — dry run / 確認付き / 強制の 3 モードに対応
+- **Git pull** — リモートに更新がある場合のみ pull を実行
+- **Slack 通知** — デプロイ完了時に差分ログ付きで自動通知
+- **設定ファイルテンプレート** — plain / CakePHP 3 / EC-CUBE 4 / WordPress に対応
+- **単一 phar ファイル** — インストール不要で即使用可能
+
+## 📋 Requirements
+
+- PHP 5.4 / 7.x / 8.x
+- Extensions: `ext-curl`, `ext-json`, `ext-posix`, `ext-zip`
+
+## 📦 Installation
 
 ```bash
-# Download using wget
+# ダウンロード
 wget https://github.com/apple-x-co/rocket/releases/latest/download/rocket.phar
-
-# Then test the downloaded phars
 chmod u+x rocket.phar
+
+# 最新版へのアップグレード
+./rocket.phar --upgrade
+```
+
+## 🚀 Quick Start
+
+典型的なセットアップから初回デプロイまでの流れです。
+
+```bash
+# 1. 設定ファイルを生成（テンプレートを選択）
 ./rocket.phar --init > ./rocket.json
-```
+#   テンプレート: plain（デフォルト）, cakephp3, eccube4, wordpress
+#   例: ./rocket.phar --init=wordpress > ./rocket.json
 
-## Usage
-
-### Show information
-
-```bash
-./rocket.phar --info #--no-color
-```
-
-### Verification configure file
-
-```bash
+# 2. 設定ファイルを検証
 ./rocket.phar --config ./rocket.json --verify
-```
 
-### Slack notification test
-
-```bash
+# 3. Slack 通知をテスト
 ./rocket.phar --config ./rocket.json --notify-test
-```
 
-### Dry run sync directory
-
-```bash
+# 4. ドライランで差分を確認
 ./rocket.phar --config ./rocket.json --sync dry
-```
 
-### Git pull & Confirm sync directory
-
-```bash
+# 5. Git pull + デプロイ（確認あり）
 ./rocket.phar --config ./rocket.json --git pull --sync confirm
 ```
 
-### Git pull & Force sync directory
+デプロイ後、ファイルに変更があった場合は Slack に以下の内容が自動通知されます。
+
+- デプロイ実行ユーザー・ホスト名・URL
+- Git pull ログ（実行した場合）
+- rsync による変更ファイル一覧
+
+## 🛠 Commands
+
+### デプロイ（rsync）
+
+`--sync` の動作モード：
+
+| モード | 動作 |
+|--------|------|
+| `dry` | ドライランのみ（実際の転送は行わない） |
+| `confirm` | ドライランを表示し、`y` 入力で本実行 |
+| `force` | 確認なしで即実行 |
 
 ```bash
-./rocket.phar --config ./rocket.json --git pull --sync force
+# ドライラン
+./rocket.phar -c ./rocket.json -s dry
+
+# Git pull してから確認付きデプロイ
+./rocket.phar -c ./rocket.json -g pull -s confirm
+
+# 強制デプロイのみ
+./rocket.phar -c ./rocket.json -s force
 ```
 
-### Sync directory only
+### Slack 通知
 
 ```bash
-./rocket.phar --config ./rocket.json --sync confirm
+# 任意のテキストを通知
+echo "HELLO WORLD" | ./rocket.phar -c ./rocket.json --notify
+
+# パイプで複数行も送信可能
+cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 ```
 
-### Slack notification
+### その他
 
 ```bash
-echo "HELLO WORLD" | ./rocket.phar --config ./rocket.json --notify
+# バージョン情報を表示
+./rocket.phar --info
+
+# ヘルプを表示
+./rocket.phar --help
+
+# 設定ファイルを検証
+./rocket.phar -c ./rocket.json --verify
 ```
 
-### Download latest version rocket
+## ⚙️ Options
 
-```bash
-./rocket.phar --upgrade
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--config <file>` | `-c` | 設定ファイルのパス（JSON） |
+| `--git [pull]` | `-g` | Git 操作 |
+| `--sync [dry\|confirm\|force]` | `-s` | rsync 操作 |
+| `--notify` | `-n` | Slack 通知（stdin から読み込み） |
+| `--notify-test` | | Slack 通知テスト |
+| `--verify` | `-v` | 設定ファイルの検証 |
+| `--init [plain\|cakephp3\|eccube4\|wordpress]` | `-i` | 設定ファイルテンプレートを出力 |
+| `--upgrade` | `-u` | 最新バージョンをダウンロード |
+| `--unzip <path>` | | アップグレード時に使用する unzip のパス |
+| `--ssl [TLSv1_0\|TLSv1_1\|TLSv1_2\|TLSv1_3]` | | SSL バージョンを指定 |
+| `--info` | | バージョン情報を表示 |
+| `--help` | `-h` | ヘルプを表示 |
+| `--no-color` | | カラー出力を無効化 |
+| `--debug` | | 実行コマンドをデバッグ表示 |
+
+## 📝 Configuration
+
+`--init` で生成される設定ファイルのリファレンスです。
+
+```json
+{
+  "version": "1.1",
+  "user": "centos-user",
+  "url": "https://example.com/",
+  "slack": {
+    "channel": "channel-name",
+    "username": "project-name",
+    "incomingWebhook": "https://hooks.slack.com/services/xxx",
+    "icon": ":tada:"
+  },
+  "source": {
+    "directory": "/home/sample/source/"
+  },
+  "destinations": [
+    {
+      "from": "/home/sample/source/htdocs/",
+      "to": "/var/www/vhosts/example.com/htdocs/",
+      "excludes": [
+        ".gitkeep",
+        ".gitignore",
+        "healthcheck.txt"
+      ],
+      "scripts": [
+        {
+          "path": "/path/to/script",
+          "option": "argument"
+        }
+      ]
+    }
+  ],
+  "rsync": {
+    "path": "/usr/bin/rsync",
+    "option": "--recursive --links --checksum --verbose --human-readable --delete"
+  },
+  "git": {
+    "path": "/usr/bin/git"
+  }
+}
 ```
+
+| Key | Required | Description |
+|-----|----------|-------------|
+| `user` | ✓ | デプロイを許可するシステムユーザー名 |
+| `url` | ✓ | デプロイ先 URL（Slack 通知に表示） |
+| `slack.channel` | ✓ | Slack チャンネル名 |
+| `slack.username` | ✓ | Slack 投稿ユーザー名 |
+| `slack.incomingWebhook` | ✓ | Slack Incoming Webhook URL |
+| `slack.icon` | | Slack アイコン（絵文字、デフォルト: `:sparkles:`） |
+| `source.directory` | | Git リポジトリのディレクトリパス |
+| `destinations[].from` | ✓ | rsync の転送元ディレクトリ |
+| `destinations[].to` | ✓ | rsync の転送先ディレクトリ |
+| `destinations[].excludes` | | rsync で除外するパス |
+| `destinations[].scripts` | | 同期後に実行するスクリプト |
+| `rsync.path` | | rsync のパス（デフォルト: `/usr/bin/rsync`） |
+| `rsync.option` | | rsync オプション |
+| `git.path` | | git のパス（デフォルト: `/usr/bin/git`） |
