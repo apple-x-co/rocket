@@ -2,7 +2,7 @@
 
 namespace Rocket\Slack\BlockKit\Element;
 
-class MarkdownText implements ElementInterface
+class Mrkdwn implements ElementInterface
 {
     /** @var string */
     private $text;

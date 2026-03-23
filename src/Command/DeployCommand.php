@@ -16,7 +16,7 @@ use Rocket\Slack\BlockKit\Block\Context as SlackContext;
 use Rocket\Slack\BlockKit\Block\Divider as SlackDivider;
 use Rocket\Slack\BlockKit\Block\Header as SlackHeader;
 use Rocket\Slack\BlockKit\Block\Section as SlackSection;
-use Rocket\Slack\BlockKit\Element\MarkdownText as SlackMarkdownText;
+use Rocket\Slack\BlockKit\Element\Markdown as SlackMarkdown;
 use Rocket\Slack\BlockKit\Element\PlainText as SlackPlainText;
 use Rocket\Slack\BlockKit\Message as SlackMessage;
 use Rocket\Version;
@@ -272,10 +272,10 @@ class DeployCommand implements CommandInterface
             ->addBlock(
                 (new SlackSection())
                     ->addField(
-                        new SlackMarkdownText('*Hostname:*' . PHP_EOL . gethostname())
+                        new SlackMarkdown('**Hostname:**' . PHP_EOL . gethostname())
                     )
                     ->addField(
-                        new SlackMarkdownText('*URL:*' . PHP_EOL . $configure->read('url'))
+                        new SlackMarkdown('**URL:**' . PHP_EOL . $configure->read('url'))
                     )
             );
 
@@ -287,7 +287,7 @@ class DeployCommand implements CommandInterface
                 ->addBlock(
                     (new SlackSection())
                         ->addField(
-                            new SlackMarkdownText('*Git pull*')
+                            new SlackMarkdown('**Git pull**')
                         )
                 );
 
@@ -297,7 +297,7 @@ class DeployCommand implements CommandInterface
                     ->addBlock(
                         (new SlackSection())
                             ->setText(
-                                new SlackMarkdownText('```' . $chunk . '```')
+                                new SlackMarkdown('```' . $chunk . '```')
                             )
                     );
             }
@@ -311,7 +311,7 @@ class DeployCommand implements CommandInterface
                 ->addBlock(
                     (new SlackSection())
                         ->addField(
-                            new SlackMarkdownText('*Rsync*')
+                            new SlackMarkdown('**Rsync**')
                         )
                 );
 
@@ -321,7 +321,7 @@ class DeployCommand implements CommandInterface
                     ->addBlock(
                         (new SlackSection())
                             ->setText(
-                                new SlackMarkdownText('```' . $chunk . '```')
+                                new SlackMarkdown('```' . $chunk . '```')
                             )
                     );
             }
@@ -334,13 +334,13 @@ class DeployCommand implements CommandInterface
             ->addBlock(
                 (new SlackContext())
                     ->addElement(
-                        new SlackMarkdownText('Date: ' . date("Y/m/d H:i:s"))
+                        new SlackMarkdown('Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        new SlackMarkdownText('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
+                        new SlackMarkdown('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
                     )
                     ->addElement(
-                        new SlackMarkdownText('Configuration: ' . $configure->getConfigPath())
+                        new SlackMarkdown('Configuration: ' . $configure->getConfigPath())
                     )
             );
 

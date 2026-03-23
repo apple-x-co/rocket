@@ -7,7 +7,7 @@ use Rocket\Slack\BlockKit\Block\Divider;
 use Rocket\Slack\BlockKit\Block\Header;
 use Rocket\Slack\BlockKit\Block\Image as BlockImage;
 use Rocket\Slack\BlockKit\Block\Section;
-use Rocket\Slack\BlockKit\Element\MarkdownText;
+use Rocket\Slack\BlockKit\Element\Markdown;
 use Rocket\Slack\BlockKit\Element\PlainText;
 use Rocket\Slack\BlockKit\Message;
 use Rocket\Slack\SlackIncomingResult;
@@ -104,10 +104,10 @@ class Slack
             ->addBlock(
                 (new Section())
                     ->addField(
-                        new MarkdownText('*Hostname:*' . PHP_EOL . gethostname())
+                        new Markdown('**Hostname:**' . PHP_EOL . gethostname())
                     )
                     ->addField(
-                        new MarkdownText('*URL:*' . PHP_EOL . $configure->read('url'))
+                        new Markdown('**URL:**' . PHP_EOL . $configure->read('url'))
                     )
             )
             ->addBlock(
@@ -116,13 +116,13 @@ class Slack
             ->addBlock(
                 (new Section())
                     ->setText(
-                        new MarkdownText('*Git pull*')
+                        new Markdown('**Git pull**')
                     )
             )
             ->addBlock(
                 (new Section())
                     ->setText(
-                        new MarkdownText('```HELLO WORLD```')
+                        new Markdown('```HELLO WORLD```')
                     )
             )
             ->addBlock(
@@ -131,13 +131,13 @@ class Slack
             ->addBlock(
                 (new Section())
                     ->setText(
-                        new MarkdownText('*Rsync*')
+                        new Markdown('**Rsync**')
                     )
             )
             ->addBlock(
                 (new Section())
                     ->setText(
-                        new MarkdownText('```HELLO WORLD```')
+                        new Markdown('```HELLO WORLD```')
                     )
             )
             ->addBlock(
@@ -146,13 +146,13 @@ class Slack
             ->addBlock(
                 (new Context())
                     ->addElement(
-                        new MarkdownText('Date: ' . date("Y/m/d H:i:s"))
+                        new Markdown('Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        new MarkdownText('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
+                        new Markdown('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
                     )
                     ->addElement(
-                        new MarkdownText('Configuration: ' . $configure->getConfigPath())
+                        new Markdown('Configuration: ' . $configure->getConfigPath())
                     )
             );
 

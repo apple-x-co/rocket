@@ -12,7 +12,7 @@ use Rocket\Slack;
 use Rocket\Slack\BlockKit\Block\Context as SlackContext;
 use Rocket\Slack\BlockKit\Block\Divider as SlackDivider;
 use Rocket\Slack\BlockKit\Block\Section as SlackSection;
-use Rocket\Slack\BlockKit\Element\MarkdownText as SlackMarkdownText;
+use Rocket\Slack\BlockKit\Element\Markdown as SlackMarkdown;
 use Rocket\Slack\BlockKit\Message as SlackMessage;
 use Rocket\Version;
 
@@ -50,7 +50,7 @@ class SlackNotificationCommand implements CommandInterface
                 ->addBlock(
                     (new SlackSection())
                         ->setText(
-                            new SlackMarkdownText($chunk)
+                            new SlackMarkdown($chunk)
                         )
                 );
         }
@@ -62,13 +62,13 @@ class SlackNotificationCommand implements CommandInterface
             ->addBlock(
                 (new SlackContext())
                     ->addElement(
-                        new SlackMarkdownText('Date: ' . date("Y/m/d H:i:s"))
+                        new SlackMarkdown('Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        new SlackMarkdownText('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
+                        new SlackMarkdown('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
                     )
                     ->addElement(
-                        new SlackMarkdownText('Configuration: ' . $configure->getConfigPath())
+                        new SlackMarkdown('Configuration: ' . $configure->getConfigPath())
                     )
             );
 
