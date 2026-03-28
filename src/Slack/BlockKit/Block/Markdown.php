@@ -1,8 +1,8 @@
 <?php
 
-namespace Rocket\Slack\BlockKit\Element;
+namespace Rocket\Slack\BlockKit\Block;
 
-class Markdown implements ElementInterface
+class Markdown implements BlockInterface
 {
     /** @var string */
     private $text;

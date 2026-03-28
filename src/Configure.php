@@ -7,7 +7,7 @@ use RuntimeException;
 
 class Configure
 {
-    const VERSION = '1.1';
+    const VERSION = '1.2';
 
     /** @var array  */
     private $config;

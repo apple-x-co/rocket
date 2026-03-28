@@ -33,7 +33,8 @@ class SlackNotificationTestCommand implements CommandInterface
         $configure = new Configure($configPath);
 
         $slack = new Slack(
-            $configure->read('slack.incomingWebhook'),
+            $configure->read('slack.chatPostMessageUrl'),
+            $configure->read('slack.appOauthToken'),
             $configure->read('slack.channel'),
             $configure->read('slack.username'),
             $this->http

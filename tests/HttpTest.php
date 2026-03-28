@@ -20,8 +20,8 @@ class HttpTest extends TestCase
     {
         $url = 'https://httpbin.org/post';
         $http = new Http();
-        $response = $http->post($url, 'application/json', ['HELLO' => 'WORLD']);
-        $map = json_decode($response, true);
+        $response = $http->post($url, ['Content-Type: application/json'], ['HELLO' => 'WORLD']);
+        $map = json_decode($response->getBody(), true);
 
         self::assertSame($url, $map['url']);
     }
