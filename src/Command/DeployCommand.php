@@ -14,9 +14,9 @@ use Rocket\ProcessEvents;
 use Rocket\Slack;
 use Rocket\Slack\BlockKit\Block\Context as SlackContext;
 use Rocket\Slack\BlockKit\Block\Divider as SlackDivider;
-use Rocket\Slack\BlockKit\Block\Header as SlackHeader;
+use Rocket\Slack\BlockKit\Block\Markdown as SlackMarkdown;
 use Rocket\Slack\BlockKit\Block\Section as SlackSection;
-use Rocket\Slack\BlockKit\Element\Markdown as SlackMarkdown;
+use Rocket\Slack\BlockKit\Element\Mrkdwn as SlackMrkdwn;
 use Rocket\Slack\BlockKit\Element\PlainText as SlackPlainText;
 use Rocket\Slack\BlockKit\Message as SlackMessage;
 use Rocket\Version;
@@ -262,7 +262,7 @@ class DeployCommand implements CommandInterface
         $message = new SlackMessage('Deploy successful', $configure->read('slack.icon', ':sparkles:'));
         $message
             ->addBlock(
-                new SlackHeader(new SlackPlainText('Deploy successful'))
+                new SlackMarkdown('# Deploy successful')
             )
             ->addBlock(
                 (new SlackSection())->setText(
@@ -272,10 +272,10 @@ class DeployCommand implements CommandInterface
             ->addBlock(
                 (new SlackSection())
                     ->addField(
-                        new SlackMarkdown('**Hostname:**' . PHP_EOL . gethostname())
+                        new SlackMrkdwn('**Hostname:**' . PHP_EOL . gethostname())
                     )
                     ->addField(
-                        new SlackMarkdown('**URL:**' . PHP_EOL . $configure->read('url'))
+                        new SlackMrkdwn('**URL:**' . PHP_EOL . $configure->read('url'))
                     )
             );
 
@@ -285,20 +285,14 @@ class DeployCommand implements CommandInterface
                     new SlackDivider()
                 )
                 ->addBlock(
-                    (new SlackSection())
-                        ->addField(
-                            new SlackMarkdown('**Git pull**')
-                        )
+                    new SlackMarkdown('**Git pull**')
                 );
 
-            $chunks = $chunker($gitPullLog, SlackSection::TEXT_MAX_LENGTH - 6);
+            $chunks = $chunker($gitPullLog, SlackSection::MARKDOWN_MAX_LENGTH - 6);
             foreach ($chunks as $chunk) {
                 $message
                     ->addBlock(
-                        (new SlackSection())
-                            ->setText(
-                                new SlackMarkdown('```' . $chunk . '```')
-                            )
+                        new SlackMarkdown('```' . PHP_EOL . $chunk . PHP_EOL . '```')
                     );
             }
         }
@@ -309,20 +303,14 @@ class DeployCommand implements CommandInterface
                     new SlackDivider()
                 )
                 ->addBlock(
-                    (new SlackSection())
-                        ->addField(
-                            new SlackMarkdown('**Rsync**')
-                        )
+                    new SlackMarkdown('**Rsync**')
                 );
 
             $chunks = $chunker($syncLog, SlackSection::TEXT_MAX_LENGTH - 6);
             foreach ($chunks as $chunk) {
                 $message
                     ->addBlock(
-                        (new SlackSection())
-                            ->setText(
-                                new SlackMarkdown('```' . $chunk . '```')
-                            )
+                        new SlackMarkdown('```' . PHP_EOL . $chunk . PHP_EOL . '```')
                     );
             }
         }
@@ -334,18 +322,19 @@ class DeployCommand implements CommandInterface
             ->addBlock(
                 (new SlackContext())
                     ->addElement(
-                        new SlackMarkdown('Date: ' . date("Y/m/d H:i:s"))
+                        new SlackMrkdwn('Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        new SlackMarkdown('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
+                        new SlackMrkdwn('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
                     )
                     ->addElement(
-                        new SlackMarkdown('Configuration: ' . $configure->getConfigPath())
+                        new SlackMrkdwn('Configuration: ' . $configure->getConfigPath())
                     )
             );
 
         $slack = new Slack(
-            $configure->read('slack.incomingWebhook'),
+            $configure->read('slack.chatPostMessageUrl'),
+            $configure->read('slack.appOauthToken'),
             $configure->read('slack.channel'),
             $configure->read('slack.username'),
             $this->http

@@ -13,6 +13,7 @@ composer.lock
 /build/
 phar-composer.phar
 rocket.phar
+rocket.json
 /phpunit.xml
 /.phpunit.result.cache
 /.phpcs-cache

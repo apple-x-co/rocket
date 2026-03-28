@@ -7,7 +7,8 @@ use Rocket\Slack\BlockKit\Block\Divider;
 use Rocket\Slack\BlockKit\Block\Header;
 use Rocket\Slack\BlockKit\Block\Image as BlockImage;
 use Rocket\Slack\BlockKit\Block\Section;
-use Rocket\Slack\BlockKit\Element\Markdown;
+use Rocket\Slack\BlockKit\Block\Markdown;
+use Rocket\Slack\BlockKit\Element\Mrkdwn;
 use Rocket\Slack\BlockKit\Element\PlainText;
 use Rocket\Slack\BlockKit\Message;
 use Rocket\Slack\SlackIncomingResult;
@@ -16,6 +17,9 @@ class Slack
 {
     /** @var string */
     private $url = null;
+
+    /** @var string */
+    private $appOauthToken = null;
 
     /** @var string */
     private $channel = null;
@@ -30,13 +34,15 @@ class Slack
      * Slack constructor.
      *
      * @param string      $url
+     * @param string      $appOauthToken
      * @param string|null $channel
      * @param string|null $username
      * @param Http|null   $http
      */
-    public function __construct($url, $channel = null, $username = null, $http = null)
+    public function __construct($url, $appOauthToken, $channel = null, $username = null, $http = null)
     {
         $this->url = $url;
+        $this->appOauthToken = $appOauthToken;
         $this->channel = $channel;
         $this->username = $username;
         $this->http = $http;
@@ -53,17 +59,19 @@ class Slack
             return new SlackIncomingResult(true);
         }
 
-        $result = $this->http->post(
-            $this->url,
-            'application/json',
-            $data
-        );
+        $headers = [
+            'Authorization: Bearer ' . $this->appOauthToken,
+            'Content-Type: application/json'
+        ];
+        $response = $this->http->post($this->url, $headers, $data);
+        $body = $response->getBody();
+        $result = json_decode($body, true);
 
-        if ($result === 'ok') {
+        if ($result['ok']) {
             return new SlackIncomingResult(true);
         }
 
-        return new SlackIncomingResult(false, $result);
+        return new SlackIncomingResult(false, $result['error']);
     }
 
     /**
@@ -91,10 +99,13 @@ class Slack
         $message = new Message('Test', $configure->read('slack.icon', ':sparkles:'));
         $message
             ->addBlock(
-                new Header(new PlainText('This is a test'))
+                new Markdown(
+                    '# This is a test message.' . PHP_EOL .
+                    '## Using chat.postMessage API :rocket:'
+                )
             )
             ->addBlock(
-                new BlockImage('https://picsum.photos/600/100', 'sample')
+                new BlockImage('https://picsum.photos/600/100?t=' . time(), 'sample')
             )
             ->addBlock(
                 (new Section())->setText(
@@ -104,41 +115,29 @@ class Slack
             ->addBlock(
                 (new Section())
                     ->addField(
-                        new Markdown('**Hostname:**' . PHP_EOL . gethostname())
+                        new Mrkdwn('*Hostname:*' . PHP_EOL . gethostname())
                     )
                     ->addField(
-                        new Markdown('**URL:**' . PHP_EOL . $configure->read('url'))
+                        new Mrkdwn('*URL:*' . PHP_EOL . $configure->read('url'))
                     )
             )
             ->addBlock(
                 new Divider()
             )
             ->addBlock(
-                (new Section())
-                    ->setText(
-                        new Markdown('**Git pull**')
-                    )
+                new Markdown('**Git pull**')
             )
             ->addBlock(
-                (new Section())
-                    ->setText(
-                        new Markdown('```HELLO WORLD```')
-                    )
+                new Markdown('```' . PHP_EOL . 'HELLO WORLD' . PHP_EOL .'```')
             )
             ->addBlock(
                 new Divider()
             )
             ->addBlock(
-                (new Section())
-                    ->setText(
-                        new Markdown('**Rsync**')
-                    )
+                new Markdown('**Rsync**')
             )
             ->addBlock(
-                (new Section())
-                    ->setText(
-                        new Markdown('```HELLO WORLD```')
-                    )
+                new Markdown('```' . PHP_EOL . 'HELLO WORLD' . PHP_EOL . '```')
             )
             ->addBlock(
                 new Divider()
@@ -146,15 +145,16 @@ class Slack
             ->addBlock(
                 (new Context())
                     ->addElement(
-                        new Markdown('Date: ' . date("Y/m/d H:i:s"))
+                        new Mrkdwn('Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        new Markdown('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
+                        new Mrkdwn('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
                     )
                     ->addElement(
-                        new Markdown('Configuration: ' . $configure->getConfigPath())
+                        new Mrkdwn('Configuration: ' . $configure->getConfigPath())
                     )
-            );
+            )
+        ;
 
         return $this->send($message);
     }

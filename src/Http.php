@@ -20,13 +20,24 @@ class Http
         $this->ignoreVerify = $ignoreVerify;
     }
 
-    public function setupCurl($ch)
+    /**
+     * @param resource $ch
+     * @param array    $headers
+     */
+    public function setupCurl($ch, $headers = [])
     {
         curl_setopt($ch, CURLOPT_VERBOSE, false);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_AUTOREFERER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['User-Agent: rocket.phar/' . Version::ROCKET_VERSION]);
+        curl_setopt(
+            $ch,
+            CURLOPT_HTTPHEADER,
+            array_merge(
+                ['User-Agent: rocket.phar/' . Version::ROCKET_VERSION],
+                $headers
+            )
+        );
 
         if ($this->ignoreVerify) {
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -119,23 +130,24 @@ class Http
 
     /**
      * @param string $url
-     * @param string $contentType
+     * @param array  $headers
      * @param array  $data
      *
-     * @return bool|string
+     * @return HttpResponse
      */
-    public function post($url, $contentType, $data)
+    public function post($url, $headers, $data)
     {
         $ch = curl_init();
-        $this->setupCurl($ch);
+        $this->setupCurl($ch, $headers);
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: ' . $contentType]);
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 
         $result = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
         curl_close($ch);
 
-        return $result;
+        return new HttpResponse($code, $result);
     }
 }

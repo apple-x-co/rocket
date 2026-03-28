@@ -11,8 +11,9 @@ use Rocket\Options;
 use Rocket\Slack;
 use Rocket\Slack\BlockKit\Block\Context as SlackContext;
 use Rocket\Slack\BlockKit\Block\Divider as SlackDivider;
+use Rocket\Slack\BlockKit\Block\Markdown as SlackMarkdown;
 use Rocket\Slack\BlockKit\Block\Section as SlackSection;
-use Rocket\Slack\BlockKit\Element\Markdown as SlackMarkdown;
+use Rocket\Slack\BlockKit\Element\Mrkdwn as SlackMrkdwn;
 use Rocket\Slack\BlockKit\Message as SlackMessage;
 use Rocket\Version;
 
@@ -43,16 +44,10 @@ class SlackNotificationCommand implements CommandInterface
         $message = new SlackMessage('Rocket notification', $configure->read('slack.icon', ':sparkles:'));
 
         $chunker = new Chunker();
-        $chunks = $chunker($content, SlackSection::TEXT_MAX_LENGTH - 6);
+        $chunks = $chunker($content, SlackSection::MARKDOWN_MAX_LENGTH - 6);
 
         foreach ($chunks as $chunk) {
-            $message
-                ->addBlock(
-                    (new SlackSection())
-                        ->setText(
-                            new SlackMarkdown($chunk)
-                        )
-                );
+            $message->addBlock(new SlackMarkdown($chunk));
         }
 
         $message
@@ -62,18 +57,19 @@ class SlackNotificationCommand implements CommandInterface
             ->addBlock(
                 (new SlackContext())
                     ->addElement(
-                        new SlackMarkdown('Date: ' . date("Y/m/d H:i:s"))
+                        new SlackMrkdwn('Date: ' . date("Y/m/d H:i:s"))
                     )
                     ->addElement(
-                        new SlackMarkdown('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
+                        new SlackMrkdwn('Version: ' . Main::appName() . ' ' . Version::ROCKET_VERSION)
                     )
                     ->addElement(
-                        new SlackMarkdown('Configuration: ' . $configure->getConfigPath())
+                        new SlackMrkdwn('Configuration: ' . $configure->getConfigPath())
                     )
             );
 
         $slack = new Slack(
-            $configure->read('slack.incomingWebhook'),
+            $configure->read('slack.chatPostMessageUrl'),
+            $configure->read('slack.appOauthToken'),
             $configure->read('slack.channel'),
             $configure->read('slack.username'),
             $this->http
