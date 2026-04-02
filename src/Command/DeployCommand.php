@@ -272,10 +272,10 @@ class DeployCommand implements CommandInterface
             ->addBlock(
                 (new SlackSection())
                     ->addField(
-                        new SlackMrkdwn('**Hostname:**' . PHP_EOL . gethostname())
+                        new SlackMrkdwn('*Hostname:*' . PHP_EOL . gethostname())
                     )
                     ->addField(
-                        new SlackMrkdwn('**URL:**' . PHP_EOL . $configure->read('url'))
+                        new SlackMrkdwn('*URL:*' . PHP_EOL . $configure->read('url'))
                     )
             );
 

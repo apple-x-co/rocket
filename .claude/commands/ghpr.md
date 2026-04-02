@@ -44,10 +44,6 @@ description: Create a GitHub Pull Request using gh CLI
     - 重複を削除
     - ソート
 
-   または、以下のコマンドを使用（allowed-tools で許可されている場合）:
-   ```bash
-   git branch -r | grep -v HEAD | sed 's|origin/||' | grep -v "^$(git branch --show-current)$" | sort -u
-   ```
 
 2. **候補ブランチの優先順位付け**:
     - `develop`, `main`, `master` を優先的に表示
@@ -67,8 +63,10 @@ description: Create a GitHub Pull Request using gh CLI
 ### ステップ3: 既存 PR のチェック
 
 1. **同じブランチからの Open または Draft の PR が既に存在するか確認**:
+
+   `<現在のブランチ名>` にはステップ1で取得したブランチ名をリテラル文字列として代入する（shell substitution 不可）。
    ```bash
-   gh pr list --head $(git branch --show-current) --base <選択されたベースブランチ> --state all --json number,title,state,url
+   gh pr list --head <現在のブランチ名> --base <選択されたベースブランチ> --state all --json number,title,state,url
    ```
 
    **重要**: `--state all` で全てのPRを取得し、Claude が `state` フィールドをチェックして **`OPEN` または `DRAFT` のPRのみ**を抽出します。`MERGED` や `CLOSED` のPRは除外してください。
@@ -159,9 +157,11 @@ description: Create a GitHub Pull Request using gh CLI
         - No → 処理を終了
 
     - 結果が `OPEN` または `DRAFT` の場合:
+
+      `<現在のブランチ名>` にはステップ1で取得したブランチ名をリテラル文字列として代入する（shell substitution 不可）。
       ```bash
       # 最新のコミットをリモートに push
-      git push origin $(git branch --show-current)
+      git push origin <現在のブランチ名>
       
       # PR の URL を表示
       gh pr view <PR番号> --json url -q .url
@@ -277,11 +277,10 @@ git rev-list --count origin/<base-branch>..HEAD
 ---
 
 **手順4**: 変更ファイル数を確認
-```bash
-git diff origin/<base-branch>..HEAD --name-only | wc -l
-```
 
-**例**: 出力が `3` なら、3ファイルが変更されている。
+手順5-1で取得する `git diff origin/<base-branch>..HEAD --numstat` の出力行数を数えて変更ファイル数とする。
+
+**例**: 出力が3行なら、3ファイルが変更されている。
 
 ---
 
