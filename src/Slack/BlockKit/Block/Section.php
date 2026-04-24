@@ -12,7 +12,7 @@ class Section implements BlockInterface
     const TEXT_MAX_LENGTH = 3000;
     const FIELD_TEXT_MAX_LENGTH = 2000;
     const FIELD_TEXT_MAX_ITEMS = 10;
-    const MARKDOWN_MAX_LENGTH = 12000;
+    const MARKDOWN_MAX_LENGTH = 3000;
 
     /** @var PlainText|Mrkdwn|null */
     private $text;
