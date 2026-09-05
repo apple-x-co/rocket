@@ -201,6 +201,16 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 - `Block\TaskCard`（task_card）
 - `Block\Plan`（plan）
 
+未対応ブロック（意図的に見送り）:
+
+| ブロック | 見送り理由 |
+|---|---|
+| Alert | 公式ドキュメント上「現在はモーダルでのみサポート」とされており、rocket は `chat.postMessage` でメッセージを送信するツールのため、実用上ほぼ使えない |
+| Actions | ボタン以外に select menu / overflow menu / date picker などの Element クラスが未実装で、対応には Element 側の追加作業が広範囲に必要 |
+| Input | モーダル / Home タブでのフォーム入力向けのブロックで、Incoming の一方向通知ツールである rocket との親和性が低い |
+| File | 通常の `chat.postMessage` では投稿できず、`files.remote.add` で事前登録したリモートファイルを `chat.unfurl`（リンク展開）で扱うための構造。rocket の用途（メッセージ通知）に合わない |
+| Video | `chat.postMessage` で通常どおり使用できる見込みだが、Card/Carousel などと比べて rocket のデプロイ通知用途での需要が低いため今回は見送り |
+
 ### Plan
 
 ```php
