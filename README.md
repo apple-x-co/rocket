@@ -61,11 +61,11 @@ chmod u+x rocket.phar
 
 `--sync` の動作モード：
 
-| モード | 動作 |
-|--------|------|
-| `dry` | ドライランのみ（実際の転送は行わない） |
-| `confirm` | ドライランを表示し、`y` 入力で本実行 |
-| `force` | 確認なしで即実行 |
+| モード    | 動作                                   |
+|-----------|----------------------------------------|
+| `dry`     | ドライランのみ（実際の転送は行わない） |
+| `confirm` | ドライランを表示し、`y` 入力で本実行   |
+| `force`   | 確認なしで即実行                       |
 
 ```bash
 # ドライラン
@@ -103,22 +103,22 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 
 ## ⚙️ Options
 
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--config <file>` | `-c` | 設定ファイルのパス（JSON） |
-| `--git [pull]` | `-g` | Git 操作 |
-| `--sync [dry\|confirm\|force]` | `-s` | rsync 操作 |
-| `--notify` | `-n` | Slack 通知（stdin から読み込み） |
-| `--notify-test` | | Slack 通知テスト |
-| `--verify` | `-v` | 設定ファイルの検証 |
-| `--init [plain\|cakephp3\|eccube4\|wordpress]` | `-i` | 設定ファイルテンプレートを出力 |
-| `--upgrade` | `-u` | 最新バージョンをダウンロード |
-| `--unzip <path>` | | アップグレード時に使用する unzip のパス |
-| `--ssl [TLSv1_0\|TLSv1_1\|TLSv1_2\|TLSv1_3]` | | SSL バージョンを指定 |
-| `--info` | | バージョン情報を表示 |
-| `--help` | `-h` | ヘルプを表示 |
-| `--no-color` | | カラー出力を無効化 |
-| `--debug` | | 実行コマンドをデバッグ表示 |
+| Option                                         | Short | Description                             |
+|------------------------------------------------|-------|-----------------------------------------|
+| `--config <file>`                              | `-c`  | 設定ファイルのパス（JSON）              |
+| `--git [pull]`                                 | `-g`  | Git 操作                                |
+| `--sync [dry\|confirm\|force]`                 | `-s`  | rsync 操作                              |
+| `--notify`                                     | `-n`  | Slack 通知（stdin から読み込み）        |
+| `--notify-test`                                |       | Slack 通知テスト                        |
+| `--verify`                                     | `-v`  | 設定ファイルの検証                      |
+| `--init [plain\|cakephp3\|eccube4\|wordpress]` | `-i`  | 設定ファイルテンプレートを出力          |
+| `--upgrade`                                    | `-u`  | 最新バージョンをダウンロード            |
+| `--unzip <path>`                               |       | アップグレード時に使用する unzip のパス |
+| `--ssl [TLSv1_0\|TLSv1_1\|TLSv1_2\|TLSv1_3]`   |       | SSL バージョンを指定                    |
+| `--info`                                       |       | バージョン情報を表示                    |
+| `--help`                                       | `-h`  | ヘルプを表示                            |
+| `--no-color`                                   |       | カラー出力を無効化                      |
+| `--debug`                                      |       | 実行コマンドをデバッグ表示              |
 
 ## 📝 Configuration
 
@@ -126,13 +126,14 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 
 ```json
 {
-  "version": "1.1",
+  "version": "1.2",
   "user": "centos-user",
   "url": "https://example.com/",
   "slack": {
     "channel": "channel-name",
     "username": "project-name",
-    "incomingWebhook": "https://hooks.slack.com/services/xxx",
+    "chatPostMessageUrl": "https://slack.com/api/chat.postMessage",
+    "appOauthToken": "xxx",
     "icon": ":tada:"
   },
   "source": {
@@ -165,22 +166,22 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 }
 ```
 
-| Key | Required | Description |
-|-----|----------|-------------|
-| `user` | ✓ | デプロイを許可するシステムユーザー名 |
-| `url` | ✓ | デプロイ先 URL（Slack 通知に表示） |
-| `slack.channel` | ✓ | Slack チャンネル名 |
-| `slack.username` | ✓ | Slack 投稿ユーザー名 |
-| `slack.incomingWebhook` | ✓ | Slack Incoming Webhook URL |
-| `slack.icon` | | Slack アイコン（絵文字、デフォルト: `:sparkles:`） |
-| `source.directory` | | Git リポジトリのディレクトリパス |
-| `destinations[].from` | ✓ | rsync の転送元ディレクトリ |
-| `destinations[].to` | ✓ | rsync の転送先ディレクトリ |
-| `destinations[].excludes` | | rsync で除外するパス |
-| `destinations[].scripts` | | 同期後に実行するスクリプト |
-| `rsync.path` | | rsync のパス（デフォルト: `/usr/bin/rsync`） |
-| `rsync.option` | | rsync オプション |
-| `git.path` | | git のパス（デフォルト: `/usr/bin/git`） |
+| Key                       | Required | Description                                        |
+|---------------------------|----------|----------------------------------------------------|
+| `user`                    | ✓       | デプロイを許可するシステムユーザー名               |
+| `url`                     | ✓       | デプロイ先 URL（Slack 通知に表示）                 |
+| `slack.channel`           | ✓       | Slack チャンネル名                                 |
+| `slack.username`          | ✓       | Slack 投稿ユーザー名                               |
+| `slack.incomingWebhook`   | ✓       | Slack Incoming Webhook URL                         |
+| `slack.icon`              |          | Slack アイコン（絵文字、デフォルト: `:sparkles:`） |
+| `source.directory`        |          | Git リポジトリのディレクトリパス                   |
+| `destinations[].from`     | ✓       | rsync の転送元ディレクトリ                         |
+| `destinations[].to`       | ✓       | rsync の転送先ディレクトリ                         |
+| `destinations[].excludes` |          | rsync で除外するパス                               |
+| `destinations[].scripts`  |          | 同期後に実行するスクリプト                         |
+| `rsync.path`              |          | rsync のパス（デフォルト: `/usr/bin/rsync`）       |
+| `rsync.option`            |          | rsync オプション                                   |
+| `git.path`                |          | git のパス（デフォルト: `/usr/bin/git`）           |
 
 ## 🧱 Slack Block Kit
 
