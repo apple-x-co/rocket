@@ -1,10 +1,8 @@
 <?php
 
-namespace Rocket;
+namespace Rocket\Slack\BlockKit\Block;
 
 use PHPUnit\Framework\TestCase;
-use Rocket\Slack\BlockKit\Block\Card;
-use Rocket\Slack\BlockKit\Block\Carousel;
 use Rocket\Slack\BlockKit\Element\Button;
 use Rocket\Slack\BlockKit\Element\Image;
 use Rocket\Slack\BlockKit\Element\Mrkdwn;

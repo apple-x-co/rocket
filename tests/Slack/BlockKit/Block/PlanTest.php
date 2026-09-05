@@ -1,10 +1,8 @@
 <?php
 
-namespace Rocket;
+namespace Rocket\Slack\BlockKit\Block;
 
 use PHPUnit\Framework\TestCase;
-use Rocket\Slack\BlockKit\Block\Plan;
-use Rocket\Slack\BlockKit\Block\RichText;
 use Rocket\Slack\BlockKit\Element\Plan\Task;
 use Rocket\Slack\BlockKit\Element\RichText\RichTextSection;
 use Rocket\Slack\BlockKit\Element\RichText\Text;

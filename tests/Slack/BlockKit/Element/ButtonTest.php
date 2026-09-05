@@ -1,10 +1,8 @@
 <?php
 
-namespace Rocket;
+namespace Rocket\Slack\BlockKit\Element;
 
 use PHPUnit\Framework\TestCase;
-use Rocket\Slack\BlockKit\Element\Button;
-use Rocket\Slack\BlockKit\Element\PlainText;
 
 class ButtonTest extends TestCase
 {

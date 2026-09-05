@@ -1,9 +1,8 @@
 <?php
 
-namespace Rocket;
+namespace Rocket\Slack\BlockKit\Block;
 
 use PHPUnit\Framework\TestCase;
-use Rocket\Slack\BlockKit\Block\Header;
 use Rocket\Slack\BlockKit\Element\PlainText;
 
 class HeaderTest extends TestCase

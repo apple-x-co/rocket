@@ -1,10 +1,8 @@
 <?php
 
-namespace Rocket;
+namespace Rocket\Slack\BlockKit\Block;
 
 use PHPUnit\Framework\TestCase;
-use Rocket\Slack\BlockKit\Block\DataTable;
-use Rocket\Slack\BlockKit\Block\RichText;
 use Rocket\Slack\BlockKit\Element\DataTable\RawNumber;
 use Rocket\Slack\BlockKit\Element\DataTable\RawText;
 use Rocket\Slack\BlockKit\Element\RichText\RichTextSection;

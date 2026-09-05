@@ -1,9 +1,8 @@
 <?php
 
-namespace Rocket;
+namespace Rocket\Slack\BlockKit\Block;
 
 use PHPUnit\Framework\TestCase;
-use Rocket\Slack\BlockKit\Block\ContextActions;
 use Rocket\Slack\BlockKit\Element\ContextActions\FeedbackButton;
 use Rocket\Slack\BlockKit\Element\ContextActions\FeedbackButtons;
 use Rocket\Slack\BlockKit\Element\ContextActions\IconButton;

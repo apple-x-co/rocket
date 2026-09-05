@@ -1,12 +1,8 @@
 <?php
 
-namespace Rocket;
+namespace Rocket\Slack\BlockKit\Block;
 
 use PHPUnit\Framework\TestCase;
-use Rocket\Slack\BlockKit\Block\Container;
-use Rocket\Slack\BlockKit\Block\Divider;
-use Rocket\Slack\BlockKit\Block\RichText;
-use Rocket\Slack\BlockKit\Block\Section;
 use Rocket\Slack\BlockKit\Element\Image;
 use Rocket\Slack\BlockKit\Element\Mrkdwn;
 use Rocket\Slack\BlockKit\Element\PlainText;

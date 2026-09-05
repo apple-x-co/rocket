@@ -1,9 +1,8 @@
 <?php
 
-namespace Rocket;
+namespace Rocket\Slack\BlockKit\Block;
 
 use PHPUnit\Framework\TestCase;
-use Rocket\Slack\BlockKit\Block\RichText;
 use Rocket\Slack\BlockKit\Element\RichText\Broadcast;
 use Rocket\Slack\BlockKit\Element\RichText\ChannelMention;
 use Rocket\Slack\BlockKit\Element\RichText\Color;

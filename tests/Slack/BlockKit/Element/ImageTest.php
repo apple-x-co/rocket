@@ -1,11 +1,10 @@
 <?php
 
-namespace Rocket;
+namespace Rocket\Slack\BlockKit\Element;
 
 use PHPUnit\Framework\TestCase;
-use Rocket\Slack\BlockKit\Element\Image;
 
-class ElementImageTest extends TestCase
+class ImageTest extends TestCase
 {
     public function testImage()
     {

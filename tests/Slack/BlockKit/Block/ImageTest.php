@@ -1,12 +1,11 @@
 <?php
 
-namespace Rocket;
+namespace Rocket\Slack\BlockKit\Block;
 
 use PHPUnit\Framework\TestCase;
-use Rocket\Slack\BlockKit\Block\Image;
 use Rocket\Slack\BlockKit\Element\PlainText;
 
-class BlockImageTest extends TestCase
+class ImageTest extends TestCase
 {
     public function testMinimalImage()
     {
