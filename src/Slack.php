@@ -35,6 +35,8 @@ use Rocket\Slack\SlackIncomingResult;
 
 class Slack
 {
+    const BLOCKS_VALIDATE_URL = 'https://slack.com/api/blocks.validate';
+
     /** @var string */
     private $url = null;
 
@@ -69,11 +71,12 @@ class Slack
     }
 
     /**
-     * @param array{channel: string, username: string, icon_emoji: string, blocks: array} $data
+     * @param string $url
+     * @param array  $data
      *
      * @return SlackIncomingResult
      */
-    private function sendMessage($data)
+    private function post($url, $data)
     {
         if ($this->http === null) {
             return new SlackIncomingResult(true);
@@ -83,7 +86,7 @@ class Slack
             'Authorization: Bearer ' . $this->appOauthToken,
             'Content-Type: application/json'
         ];
-        $response = $this->http->post($this->url, $headers, $data);
+        $response = $this->http->post($url, $headers, $data);
         $body = $response->getBody();
         $result = json_decode($body, true);
 
@@ -91,7 +94,12 @@ class Slack
             return new SlackIncomingResult(true);
         }
 
-        return new SlackIncomingResult(false, $result['error']);
+        $error = $result['error'];
+        if (! empty($result['errors'])) {
+            $error .= ': ' . implode(' / ', $result['errors']);
+        }
+
+        return new SlackIncomingResult(false, $error);
     }
 
     /**
@@ -101,12 +109,37 @@ class Slack
      */
     public function send($message)
     {
+        return $this->sendRaw($message->toArray());
+    }
+
+    /**
+     * chat.postMessage に任意のペイロード（blocks 等）を送信する。channel/username は自動でマージされる。
+     *
+     * @param array{blocks?: array, text?: string} $data
+     *
+     * @return SlackIncomingResult
+     */
+    public function sendRaw($data)
+    {
         $data = array_merge([
             'channel' => $this->channel,
             'username' => $this->username,
-        ], $message->toArray());
+        ], $data);
 
-        return $this->sendMessage($data);
+        return $this->post($this->url, $data);
+    }
+
+    /**
+     * blocks.validate は channel にチャンネル名（ID 以外）を渡すと channel_not_found になる
+     * ケースが確認されているため、channel/username は自動マージしない。
+     *
+     * @param array{blocks?: array} $data
+     *
+     * @return SlackIncomingResult
+     */
+    public function validateBlocks($data)
+    {
+        return $this->post(self::BLOCKS_VALIDATE_URL, $data);
     }
 
     /**

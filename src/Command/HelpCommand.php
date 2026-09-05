@@ -32,6 +32,7 @@ Options:
   -h, --help                                     Display this help message
   -i, --init [plain|cakephp3|eccube4|wordpress]  Print sample configuration file
   -n, --notify                                   Simple slack notification
+      --notify-blocks [validate|send]            Slack Block Kit JSON via stdin
       --notify-test                              Slack notification test
       --no-color                                 Without color
   -s, --sync [dry|confirm|force]                 Rsync operation

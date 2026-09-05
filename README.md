@@ -88,6 +88,22 @@ echo "HELLO WORLD" | ./rocket.phar -c ./rocket.json --notify
 cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 ```
 
+### Slack Block Kit の JSON を直接送信・検証
+
+Slack Block Kit の Blocks JSON（`{"blocks": [...]}` 形式）を標準入力から渡して、送信または検証（`blocks.validate` API）ができます。
+
+```bash
+# 送信（chat.postMessage）。channel / username は設定ファイルの値が自動で使われる
+cat blocks.json | ./rocket.phar -c ./rocket.json --notify-blocks send
+
+# 検証のみ（実際には送信しない）
+cat blocks.json | ./rocket.phar -c ./rocket.json --notify-blocks validate
+```
+
+> ⚠️ **`validate` はスキーマの妥当性のみ検証**: `blocks.validate` API は JSON の形式は検証しますが、`plan` ブロックと `task_card` ブロックの相互排他のようなビジネスルールまでは検証しません。`validate` が `ok` を返しても `send` で `invalid_blocks` エラーになるケースを実機で確認済みです。確実に送れるか確認したい場合は、実際にテストチャンネルへ `send` してみることをお勧めします。
+
+`validate` モードは `channel` / `username` を自動マージしません（`slack.channel` がチャンネル名の場合、`blocks.validate` API に渡すと `channel_not_found` になる事例を確認したため）。渡す JSON に `channel` を含めたい場合は自分でチャンネル ID を指定してください。
+
 ### その他
 
 ```bash
@@ -103,22 +119,23 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 
 ## ⚙️ Options
 
-| Option                                         | Short | Description                             |
-|------------------------------------------------|-------|-----------------------------------------|
-| `--config <file>`                              | `-c`  | 設定ファイルのパス（JSON）              |
-| `--git [pull]`                                 | `-g`  | Git 操作                                |
-| `--sync [dry\|confirm\|force]`                 | `-s`  | rsync 操作                              |
-| `--notify`                                     | `-n`  | Slack 通知（stdin から読み込み）        |
-| `--notify-test`                                |       | Slack 通知テスト                        |
-| `--verify`                                     | `-v`  | 設定ファイルの検証                      |
-| `--init [plain\|cakephp3\|eccube4\|wordpress]` | `-i`  | 設定ファイルテンプレートを出力          |
-| `--upgrade`                                    | `-u`  | 最新バージョンをダウンロード            |
-| `--unzip <path>`                               |       | アップグレード時に使用する unzip のパス |
-| `--ssl [TLSv1_0\|TLSv1_1\|TLSv1_2\|TLSv1_3]`   |       | SSL バージョンを指定                    |
-| `--info`                                       |       | バージョン情報を表示                    |
-| `--help`                                       | `-h`  | ヘルプを表示                            |
-| `--no-color`                                   |       | カラー出力を無効化                      |
-| `--debug`                                      |       | 実行コマンドをデバッグ表示              |
+| Option                                         | Short | Description                                       |
+|------------------------------------------------|-------|---------------------------------------------------|
+| `--config <file>`                              | `-c`  | 設定ファイルのパス（JSON）                        |
+| `--git [pull]`                                 | `-g`  | Git 操作                                          |
+| `--sync [dry\|confirm\|force]`                 | `-s`  | rsync 操作                                        |
+| `--notify`                                     | `-n`  | Slack 通知（stdin から読み込み）                  |
+| `--notify-blocks [validate\|send]`             |       | Block Kit JSON の検証・送信（stdin から読み込み） |
+| `--notify-test`                                |       | Slack 通知テスト                                  |
+| `--verify`                                     | `-v`  | 設定ファイルの検証                                |
+| `--init [plain\|cakephp3\|eccube4\|wordpress]` | `-i`  | 設定ファイルテンプレートを出力                    |
+| `--upgrade`                                    | `-u`  | 最新バージョンをダウンロード                      |
+| `--unzip <path>`                               |       | アップグレード時に使用する unzip のパス           |
+| `--ssl [TLSv1_0\|TLSv1_1\|TLSv1_2\|TLSv1_3]`   |       | SSL バージョンを指定                              |
+| `--info`                                       |       | バージョン情報を表示                              |
+| `--help`                                       | `-h`  | ヘルプを表示                                      |
+| `--no-color`                                   |       | カラー出力を無効化                                |
+| `--debug`                                      |       | 実行コマンドをデバッグ表示                        |
 
 ## 📝 Configuration
 
@@ -203,13 +220,13 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 
 未対応ブロック（意図的に見送り）:
 
-| ブロック | 見送り理由 |
-|---|---|
-| Alert | 公式ドキュメント上「現在はモーダルでのみサポート」とされており、rocket は `chat.postMessage` でメッセージを送信するツールのため、実用上ほぼ使えない |
-| Actions | ボタン以外に select menu / overflow menu / date picker などの Element クラスが未実装で、対応には Element 側の追加作業が広範囲に必要 |
-| Input | モーダル / Home タブでのフォーム入力向けのブロックで、Incoming の一方向通知ツールである rocket との親和性が低い |
-| File | 通常の `chat.postMessage` では投稿できず、`files.remote.add` で事前登録したリモートファイルを `chat.unfurl`（リンク展開）で扱うための構造。rocket の用途（メッセージ通知）に合わない |
-| Video | `chat.postMessage` で通常どおり使用できる見込みだが、Card/Carousel などと比べて rocket のデプロイ通知用途での需要が低いため今回は見送り |
+| ブロック | 見送り理由                                                                                                                                                                           |
+|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Alert    | 公式ドキュメント上「現在はモーダルでのみサポート」とされており、rocket は `chat.postMessage` でメッセージを送信するツールのため、実用上ほぼ使えない                                  |
+| Actions  | ボタン以外に select menu / overflow menu / date picker などの Element クラスが未実装で、対応には Element 側の追加作業が広範囲に必要                                                  |
+| Input    | モーダル / Home タブでのフォーム入力向けのブロックで、Incoming の一方向通知ツールである rocket との親和性が低い                                                                      |
+| File     | 通常の `chat.postMessage` では投稿できず、`files.remote.add` で事前登録したリモートファイルを `chat.unfurl`（リンク展開）で扱うための構造。rocket の用途（メッセージ通知）に合わない |
+| Video    | `chat.postMessage` で通常どおり使用できる見込みだが、Card/Carousel などと比べて rocket のデプロイ通知用途での需要が低いため今回は見送り                                              |
 
 ### Plan
 
