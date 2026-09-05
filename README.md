@@ -191,8 +191,30 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 
 - `Block\Section` / `Block\Divider` / `Block\Header` / `Block\Image` / `Block\Context` / `Block\Markdown`
 - `Block\RichText`（rich_text）
+- `Block\Table`（table）
 - `Block\DataTable`（data_table）
 - `Block\DataVisualization`（data_visualization）
+
+### Table
+
+```php
+use Rocket\Slack\BlockKit\Block\Table;
+use Rocket\Slack\BlockKit\Element\DataTable\RawNumber;
+use Rocket\Slack\BlockKit\Element\DataTable\RawText;
+use Rocket\Slack\BlockKit\Element\Table\ColumnSetting;
+
+$table = (new Table())
+    ->addRow([new RawText('File'), new RawText('Size')])
+    ->addRow([new RawText('index.php'), new RawNumber(1024, '1,024 B')])
+    ->addColumnSetting(new ColumnSetting(ColumnSetting::ALIGN_LEFT, true))
+    ->addColumnSetting(new ColumnSetting(ColumnSetting::ALIGN_RIGHT));
+
+$message->addBlock($table);
+```
+
+セルには `RawText` / `RawNumber` に加えて `Block\RichText` も使用できます。`data_table` と異なりページングやキャプションはなく、列ごとの表示設定（`align` / `is_wrapped`）を `ColumnSetting` で指定できます。
+
+> ⚠️ **既知の問題**: 2026-09 時点で確認したところ、`table` ブロックの `raw_number` セルは Slack 上で値が空白表示になる事例を確認しています（`blocks.validate` API ではペイロードは有効と判定されるため、Slack 側の描画の問題と考えられます）。同じ形式の `raw_number` セルでも `data_table` ブロックでは正常に表示されます。数値を確実に表示したい場合は、`raw_number` の代わりに `RawText` で文字列として渡すことを検討してください。
 
 ### DataTable
 

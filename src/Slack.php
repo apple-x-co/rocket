@@ -10,6 +10,7 @@ use Rocket\Slack\BlockKit\Block\Header;
 use Rocket\Slack\BlockKit\Block\Image as BlockImage;
 use Rocket\Slack\BlockKit\Block\Section;
 use Rocket\Slack\BlockKit\Block\Markdown;
+use Rocket\Slack\BlockKit\Block\Table;
 use Rocket\Slack\BlockKit\Element\Chart\AxisConfig;
 use Rocket\Slack\BlockKit\Element\Chart\DataPoint;
 use Rocket\Slack\BlockKit\Element\Chart\LineChart;
@@ -146,6 +147,16 @@ class Slack
             )
             ->addBlock(
                 new Markdown('```' . PHP_EOL . 'HELLO WORLD' . PHP_EOL . '```')
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                // 注意: table ブロックの raw_number セルは Slack 側で描画されない事例を確認したため RawText を使用
+                // （https://docs.slack.dev/reference/block-kit/blocks/table-block 参照。data_table ブロックでは問題なし）
+                (new Table())
+                    ->addRow([new RawText('File'), new RawText('Size')])
+                    ->addRow([new RawText('index.php'), new RawText('1024 B')])
             )
             ->addBlock(
                 new Divider()
