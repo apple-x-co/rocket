@@ -181,3 +181,52 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 | `rsync.path` | | rsync のパス（デフォルト: `/usr/bin/rsync`） |
 | `rsync.option` | | rsync オプション |
 | `git.path` | | git のパス（デフォルト: `/usr/bin/git`） |
+
+## 🧱 Slack Block Kit
+
+`Rocket\Slack\BlockKit` 名前空間に、[Slack Block Kit](https://docs.slack.dev/block-kit) のブロックを組み立てる PHP クラス群を同梱しています（PHP 5.4 互換）。
+
+対応ブロック:
+
+- `Block\Section` / `Block\Divider` / `Block\Header` / `Block\Image` / `Block\Context` / `Block\Markdown`
+- `Block\RichText`（rich_text）
+- `Block\DataTable`（data_table）
+- `Block\DataVisualization`（data_visualization）
+
+### DataTable
+
+```php
+use Rocket\Slack\BlockKit\Block\DataTable;
+use Rocket\Slack\BlockKit\Element\DataTable\RawNumber;
+use Rocket\Slack\BlockKit\Element\DataTable\RawText;
+
+$table = (new DataTable('Deploy History'))
+    ->addRow([new RawText('Date'), new RawText('User'), new RawText('Duration (sec)')])
+    ->addRow([new RawText('2026/09/05 10:00:00'), new RawText('sano'), new RawNumber(12, '12')]);
+
+$message->addBlock($table);
+```
+
+セルには `RawText` / `RawNumber` に加えて `Block\RichText` も使用できます（1 行目のヘッダー行を除く）。
+
+### DataVisualization
+
+```php
+use Rocket\Slack\BlockKit\Block\DataVisualization;
+use Rocket\Slack\BlockKit\Element\Chart\AxisConfig;
+use Rocket\Slack\BlockKit\Element\Chart\DataPoint;
+use Rocket\Slack\BlockKit\Element\Chart\LineChart;
+use Rocket\Slack\BlockKit\Element\Chart\Series;
+
+$chart = (new LineChart(new AxisConfig(['Mon', 'Tue', 'Wed'], 'Day', 'Seconds')))
+    ->addSeries(
+        (new Series('Duration'))
+            ->addDataPoint(new DataPoint('Mon', 12))
+            ->addDataPoint(new DataPoint('Tue', 9))
+            ->addDataPoint(new DataPoint('Wed', 15))
+    );
+
+$message->addBlock(new DataVisualization('Deploy Duration', $chart));
+```
+
+チャートの種類は `PieChart` / `BarChart` / `AreaChart` / `LineChart` の 4 種類です。1 メッセージに含められる `DataVisualization` ブロックは最大 2 個までという Slack 側の制約があります。

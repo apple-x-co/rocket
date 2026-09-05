@@ -3,11 +3,19 @@
 namespace Rocket;
 
 use Rocket\Slack\BlockKit\Block\Context;
+use Rocket\Slack\BlockKit\Block\DataTable;
+use Rocket\Slack\BlockKit\Block\DataVisualization;
 use Rocket\Slack\BlockKit\Block\Divider;
 use Rocket\Slack\BlockKit\Block\Header;
 use Rocket\Slack\BlockKit\Block\Image as BlockImage;
 use Rocket\Slack\BlockKit\Block\Section;
 use Rocket\Slack\BlockKit\Block\Markdown;
+use Rocket\Slack\BlockKit\Element\Chart\AxisConfig;
+use Rocket\Slack\BlockKit\Element\Chart\DataPoint;
+use Rocket\Slack\BlockKit\Element\Chart\LineChart;
+use Rocket\Slack\BlockKit\Element\Chart\Series;
+use Rocket\Slack\BlockKit\Element\DataTable\RawNumber;
+use Rocket\Slack\BlockKit\Element\DataTable\RawText;
 use Rocket\Slack\BlockKit\Element\Mrkdwn;
 use Rocket\Slack\BlockKit\Element\PlainText;
 use Rocket\Slack\BlockKit\Message;
@@ -138,6 +146,29 @@ class Slack
             )
             ->addBlock(
                 new Markdown('```' . PHP_EOL . 'HELLO WORLD' . PHP_EOL . '```')
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                (new DataTable('Deploy History'))
+                    ->addRow([new RawText('Date'), new RawText('User'), new RawText('Duration (sec)')])
+                    ->addRow([new RawText(date('Y/m/d H:i:s')), new RawText(get_current_user()), new RawNumber(12, '12')])
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                new DataVisualization(
+                    'Deploy Duration',
+                    (new LineChart(new AxisConfig(['Mon', 'Tue', 'Wed'], 'Day', 'Seconds')))
+                        ->addSeries(
+                            (new Series('Duration'))
+                                ->addDataPoint(new DataPoint('Mon', 12))
+                                ->addDataPoint(new DataPoint('Tue', 9))
+                                ->addDataPoint(new DataPoint('Wed', 15))
+                        )
+                )
             )
             ->addBlock(
                 new Divider()
