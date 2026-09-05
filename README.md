@@ -194,6 +194,32 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 - `Block\Table`（table）
 - `Block\DataTable`（data_table）
 - `Block\DataVisualization`（data_visualization）
+- `Block\Card`（card）
+
+### Card
+
+```php
+use Rocket\Slack\BlockKit\Block\Card;
+use Rocket\Slack\BlockKit\Element\Button;
+use Rocket\Slack\BlockKit\Element\Card\SlackIcon;
+use Rocket\Slack\BlockKit\Element\Image;
+use Rocket\Slack\BlockKit\Element\Mrkdwn;
+use Rocket\Slack\BlockKit\Element\PlainText;
+
+$card = (new Card())
+    ->setIcon(new Image('https://picsum.photos/36/36', 'Icon'))
+    ->setTitle(new Mrkdwn('Lumon Industries'))
+    ->setSubtitle(new Mrkdwn('Committed to work-life balance'))
+    ->setHeroImage(new Image('https://picsum.photos/400/300', 'Sample hero image'))
+    ->setBody(new Mrkdwn('Please enjoy each card equally.'))
+    ->addAction(new Button(new PlainText('Action Button'), 'button_action'));
+
+$message->addBlock($card);
+```
+
+`icon` は事前定義済みアイコンを使う `SlackIcon`（`new SlackIcon('star-filled')` など）で代替可能です。ただし `icon` と `slack_icon` は同じ位置に描画されるため排他利用です。`title` / `subtitle` / `body` / `subtext` には `PlainText` / `Mrkdwn` が使用でき、`addAction()` には `Button` を最大 3 個まで追加できます。
+
+`Button` は `action_id` のみ（`setUrl()` 未指定）だと、クリック時に Slack アプリの Interactivity 用エンドポイントへリクエストが送られるだけで、その受け口（サーバー）がない場合は見た目上何も起こりません。クリックしてリンクを開かせたい場合は `->setUrl('https://example.com/')` を併用してください。
 
 ### Table
 

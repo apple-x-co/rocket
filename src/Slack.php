@@ -2,6 +2,7 @@
 
 namespace Rocket;
 
+use Rocket\Slack\BlockKit\Block\Card;
 use Rocket\Slack\BlockKit\Block\Context;
 use Rocket\Slack\BlockKit\Block\DataTable;
 use Rocket\Slack\BlockKit\Block\DataVisualization;
@@ -11,12 +12,14 @@ use Rocket\Slack\BlockKit\Block\Image as BlockImage;
 use Rocket\Slack\BlockKit\Block\Section;
 use Rocket\Slack\BlockKit\Block\Markdown;
 use Rocket\Slack\BlockKit\Block\Table;
+use Rocket\Slack\BlockKit\Element\Button;
 use Rocket\Slack\BlockKit\Element\Chart\AxisConfig;
 use Rocket\Slack\BlockKit\Element\Chart\DataPoint;
 use Rocket\Slack\BlockKit\Element\Chart\LineChart;
 use Rocket\Slack\BlockKit\Element\Chart\Series;
 use Rocket\Slack\BlockKit\Element\DataTable\RawNumber;
 use Rocket\Slack\BlockKit\Element\DataTable\RawText;
+use Rocket\Slack\BlockKit\Element\Image as ElementImage;
 use Rocket\Slack\BlockKit\Element\Mrkdwn;
 use Rocket\Slack\BlockKit\Element\PlainText;
 use Rocket\Slack\BlockKit\Message;
@@ -180,6 +183,20 @@ class Slack
                                 ->addDataPoint(new DataPoint('Wed', 15))
                         )
                 )
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                (new Card())
+                    ->setIcon(new ElementImage('https://picsum.photos/36/36?t=' . time(), 'icon'))
+                    ->setTitle(new Mrkdwn('Deploy Report'))
+                    ->setSubtitle(new Mrkdwn(gethostname()))
+                    ->setBody(new Mrkdwn($configure->read('url')))
+                    ->addAction(
+                        (new Button(new PlainText('Open'), 'open_url'))
+                            ->setUrl($configure->read('url'))
+                    )
             )
             ->addBlock(
                 new Divider()
