@@ -3,6 +3,7 @@
 namespace Rocket;
 
 use Rocket\Slack\BlockKit\Block\Card;
+use Rocket\Slack\BlockKit\Block\Carousel;
 use Rocket\Slack\BlockKit\Block\Container;
 use Rocket\Slack\BlockKit\Block\Context;
 use Rocket\Slack\BlockKit\Block\ContextActions;
@@ -201,6 +202,22 @@ class Slack
                     ->addAction(
                         (new Button(new PlainText('Open'), 'open_url'))
                             ->setUrl($configure->read('url'))
+                    )
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                (new Carousel())
+                    ->addElement(
+                        (new Card())
+                            ->setTitle(new PlainText('Git pull'))
+                            ->setBody(new PlainText('Repository updated'))
+                    )
+                    ->addElement(
+                        (new Card())
+                            ->setTitle(new PlainText('Rsync'))
+                            ->setBody(new PlainText('Files synchronized'))
                     )
             )
             ->addBlock(

@@ -195,6 +195,7 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 - `Block\DataTable`（data_table）
 - `Block\DataVisualization`（data_visualization）
 - `Block\Card`（card）
+- `Block\Carousel`（carousel）
 - `Block\Container`（container）
 - `Block\ContextActions`（context_actions）
 
@@ -273,6 +274,22 @@ $message->addBlock($card);
 `icon` は事前定義済みアイコンを使う `SlackIcon`（`new SlackIcon('star-filled')` など）で代替可能です。ただし `icon` と `slack_icon` は同じ位置に描画されるため排他利用です。`title` / `subtitle` / `body` / `subtext` には `PlainText` / `Mrkdwn` が使用でき、`addAction()` には `Button` を最大 3 個まで追加できます。
 
 `Button` は `action_id` のみ（`setUrl()` 未指定）だと、クリック時に Slack アプリの Interactivity 用エンドポイントへリクエストが送られるだけで、その受け口（サーバー）がない場合は見た目上何も起こりません。クリックしてリンクを開かせたい場合は `->setUrl('https://example.com/')` を併用してください。
+
+### Carousel
+
+```php
+use Rocket\Slack\BlockKit\Block\Card;
+use Rocket\Slack\BlockKit\Block\Carousel;
+use Rocket\Slack\BlockKit\Element\Mrkdwn;
+
+$carousel = (new Carousel())
+    ->addElement((new Card())->setTitle(new Mrkdwn('MDR'))->setSubtitle(new Mrkdwn('Refining data files')))
+    ->addElement((new Card())->setTitle(new Mrkdwn('O&D'))->setSubtitle(new Mrkdwn('Optics and design')));
+
+$message->addBlock($carousel);
+```
+
+`addElement()` には `Block\Card` のみを最大 10 個（最低 1 個）まで追加できます。カード自体の組み立て方は上記 Card セクションと同じです。
 
 ### Table
 
