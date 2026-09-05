@@ -259,10 +259,20 @@ class DeployCommand implements CommandInterface
             return;
         }
 
+        $slack = new Slack(
+            $configure->read('slack.chatPostMessageUrl'),
+            $configure->read('slack.appOauthToken'),
+            $configure->read('slack.channel'),
+            $configure->read('slack.username'),
+            $this->http
+        );
+
+        $introText = '# Deploy successful';
+
         $message = new SlackMessage('Deploy successful', $configure->read('slack.icon', ':sparkles:'));
         $message
             ->addBlock(
-                new SlackMarkdown('# Deploy successful')
+                new SlackMarkdown($introText)
             )
             ->addBlock(
                 (new SlackSection())->setText(
@@ -279,39 +289,78 @@ class DeployCommand implements CommandInterface
                     )
             );
 
+        // markdown ブロックは個々のブロックではなく「1メッセージ内の text 合計」が
+        // SlackMarkdown::TOTAL_TEXT_MAX_LENGTH を超えると msg_blocks_too_long エラーになる。
+        // 内容を切り詰めて失うのではなく、収まらない分は新しいメッセージに分けて送信する。
+        $markdownBudget = SlackMarkdown::TOTAL_TEXT_MAX_LENGTH - mb_strlen($introText, 'UTF-8');
+        $fenceLength = mb_strlen('```' . PHP_EOL . PHP_EOL . '```', 'UTF-8');
+
+        $results = [];
+
+        // 現在組み立て中のメッセージに $length 分の余裕がなければ、いったん送信して
+        // 新しいメッセージを開始する（予算をリセットする）。
+        $ensureBudget = function ($length) use (&$message, &$markdownBudget, &$results, $slack, $configure) {
+            if ($markdownBudget >= $length) {
+                return;
+            }
+
+            $results[] = $slack->send($message);
+            $message = new SlackMessage('Deploy successful (continued)', $configure->read('slack.icon', ':sparkles:'));
+            // Message の $text はメッセージ本文には表示されない（通知プレビュー等でのみ使われる）ため、
+            // 続きのメッセージであることが分かるように Context ブロックで本文にも明示する。
+            $message->addBlock(
+                (new SlackContext())->addElement(
+                    new SlackMrkdwn('▶ Continued from previous message')
+                )
+            );
+            $markdownBudget = SlackMarkdown::TOTAL_TEXT_MAX_LENGTH;
+        };
+
         if ($gitPullLog !== null) {
+            $header = '**Git pull**';
+            $ensureBudget(mb_strlen($header, 'UTF-8'));
             $message
                 ->addBlock(
                     new SlackDivider()
                 )
                 ->addBlock(
-                    new SlackMarkdown('**Git pull**')
+                    new SlackMarkdown($header)
                 );
+            $markdownBudget -= mb_strlen($header, 'UTF-8');
 
-            $chunks = $chunker($gitPullLog, SlackSection::MARKDOWN_MAX_LENGTH - 6);
+            $chunks = $chunker($gitPullLog, SlackMarkdown::TOTAL_TEXT_MAX_LENGTH - $fenceLength);
             foreach ($chunks as $chunk) {
+                $chunkLength = $fenceLength + mb_strlen($chunk, 'UTF-8');
+                $ensureBudget($chunkLength);
                 $message
                     ->addBlock(
                         new SlackMarkdown('```' . PHP_EOL . $chunk . PHP_EOL . '```')
                     );
+                $markdownBudget -= $chunkLength;
             }
         }
 
         if ($syncLog !== null) {
+            $header = '**Rsync**';
+            $ensureBudget(mb_strlen($header, 'UTF-8'));
             $message
                 ->addBlock(
                     new SlackDivider()
                 )
                 ->addBlock(
-                    new SlackMarkdown('**Rsync**')
+                    new SlackMarkdown($header)
                 );
+            $markdownBudget -= mb_strlen($header, 'UTF-8');
 
-            $chunks = $chunker($syncLog, SlackSection::TEXT_MAX_LENGTH - 6);
+            $chunks = $chunker($syncLog, SlackMarkdown::TOTAL_TEXT_MAX_LENGTH - $fenceLength);
             foreach ($chunks as $chunk) {
+                $chunkLength = $fenceLength + mb_strlen($chunk, 'UTF-8');
+                $ensureBudget($chunkLength);
                 $message
                     ->addBlock(
                         new SlackMarkdown('```' . PHP_EOL . $chunk . PHP_EOL . '```')
                     );
+                $markdownBudget -= $chunkLength;
             }
         }
 
@@ -332,16 +381,12 @@ class DeployCommand implements CommandInterface
                     )
             );
 
-        $slack = new Slack(
-            $configure->read('slack.chatPostMessageUrl'),
-            $configure->read('slack.appOauthToken'),
-            $configure->read('slack.channel'),
-            $configure->read('slack.username'),
-            $this->http
-        );
-        $slackResult = $slack->send($message);
-        if (! $slackResult->isOk()) {
-            $this->output->error($slackResult->getError());
+        $results[] = $slack->send($message);
+
+        foreach ($results as $result) {
+            if (! $result->isOk()) {
+                $this->output->error($result->getError());
+            }
         }
     }
 }

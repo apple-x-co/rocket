@@ -88,6 +88,8 @@ echo "HELLO WORLD" | ./rocket.phar -c ./rocket.json --notify
 cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 ```
 
+`markdown` ブロックは Slack 側で「1メッセージ内の全 markdown ブロックの text 合計が 12,000 文字まで」という制限があるため（超えると `msg_blocks_too_long` エラーになる）、`--notify` と `--sync` によるデプロイ通知（Git pull ログ・rsync ログ）はこの上限を超える場合、内容を切り詰めずに**複数のメッセージに自動で分割**して送信します。分割された場合、本文の先頭に `Part 2/3` や `▶ Continued from previous message` のような目印がブロックとして表示されます（メッセージの通知プレビュー用テキストではなく本文に出るので、Slack 上でも分割されたことが分かります）。
+
 ### Slack Block Kit の JSON を直接送信・検証
 
 Slack Block Kit の Blocks JSON（`{"blocks": [...]}` 形式）を標準入力から渡して、送信または検証（`blocks.validate` API）ができます。

@@ -58,7 +58,7 @@ class Main
                 }
 
                 if ($this->options->hasNotify()) {
-                    $command = new SlackNotificationCommand($this->options, $http);
+                    $command = new SlackNotificationCommand($this->options, $output, $http);
                 }
 
                 if ($this->options->hasNotifyBlocks()) {
