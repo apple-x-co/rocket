@@ -14,6 +14,7 @@ use Rocket\Slack\BlockKit\Block\Header;
 use Rocket\Slack\BlockKit\Block\Image as BlockImage;
 use Rocket\Slack\BlockKit\Block\Section;
 use Rocket\Slack\BlockKit\Block\Markdown;
+use Rocket\Slack\BlockKit\Block\Plan;
 use Rocket\Slack\BlockKit\Block\Table;
 use Rocket\Slack\BlockKit\Element\Button;
 use Rocket\Slack\BlockKit\Element\Chart\AxisConfig;
@@ -28,6 +29,7 @@ use Rocket\Slack\BlockKit\Element\DataTable\RawText;
 use Rocket\Slack\BlockKit\Element\Image as ElementImage;
 use Rocket\Slack\BlockKit\Element\Mrkdwn;
 use Rocket\Slack\BlockKit\Element\PlainText;
+use Rocket\Slack\BlockKit\Element\Plan\Task;
 use Rocket\Slack\BlockKit\Message;
 use Rocket\Slack\SlackIncomingResult;
 
@@ -161,6 +163,15 @@ class Slack
                 new Divider()
             )
             ->addBlock(
+                (new Plan('Deploy Steps'))
+                    ->addTask(new Task('step_git_pull', 'Git pull', Task::STATUS_COMPLETE))
+                    ->addTask(new Task('step_rsync', 'Rsync', Task::STATUS_COMPLETE))
+                    ->addTask(new Task('step_notify', 'Notify Slack', Task::STATUS_IN_PROGRESS))
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
                 // 注意: table ブロックの raw_number セルは Slack 側で描画されない事例を確認したため RawText を使用
                 // （https://docs.slack.dev/reference/block-kit/blocks/table-block 参照。data_table ブロックでは問題なし）
                 (new Table())
@@ -258,9 +269,9 @@ class Slack
                             ->setActionId('dismiss_notification')
                     )
             )
-            ->addBlock(
-                new Divider()
-            )
+            // 注意: plan ブロックと task_card ブロックは同じメッセージ内に同時に含められない
+            // （chat.postMessage が invalid_blocks: "Plan block and task blocks are mutually exclusive" を返す）
+            // ため、このショーケースでは task_card は省略し plan のみ送信している
             ->addBlock(
                 (new Context())
                     ->addElement(

@@ -4,5 +4,5 @@ namespace Rocket;
 
 class Version
 {
-    const ROCKET_VERSION = '0.1.27';
+    const ROCKET_VERSION = '0.1.29';
 }

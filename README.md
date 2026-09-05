@@ -198,6 +198,61 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 - `Block\Carousel`（carousel）
 - `Block\Container`（container）
 - `Block\ContextActions`（context_actions）
+- `Block\TaskCard`（task_card）
+- `Block\Plan`（plan）
+
+### Plan
+
+```php
+use Rocket\Slack\BlockKit\Block\Plan;
+use Rocket\Slack\BlockKit\Block\RichText;
+use Rocket\Slack\BlockKit\Element\Plan\Task;
+use Rocket\Slack\BlockKit\Element\RichText\RichTextSection;
+use Rocket\Slack\BlockKit\Element\RichText\Text;
+
+$plan = (new Plan('Thinking completed'))
+    ->addTask(new Task('call_001', 'Fetched user profile information', Task::STATUS_IN_PROGRESS))
+    ->addTask(new Task('call_002', 'Checked user permissions', Task::STATUS_PENDING))
+    ->addTask(
+        (new Task('call_003', 'Generated comprehensive user report', Task::STATUS_COMPLETE))
+            ->setOutput(
+                (new RichText())->addElement(
+                    (new RichTextSection())->addElement(new Text('15 data points compiled'))
+                )
+            )
+    );
+
+$message->addBlock($plan);
+```
+
+`addTask()` に渡す `Element\Plan\Task` は `Block\TaskCard` とは別の値オブジェクトです。`status` は `Task::STATUS_IN_PROGRESS` / `STATUS_PENDING` / `STATUS_COMPLETE` のいずれかで、Task card ブロックの `error` は存在しません。`title` は素の文字列、`details` / `output` には `Block\RichText` を指定できます。`tasks` は最大 50 個、各 `task_id` は Plan 内で一意である必要があります。
+
+> ⚠️ **既知の制約**: `Block\Plan` と `Block\TaskCard` は同じメッセージ内に同時に含めることはできません。両方を含めて `chat.postMessage` すると `invalid_blocks`（`"Plan block and task blocks are mutually exclusive"`）エラーになります（公式ドキュメントには明記されていませんが、実機検証で確認済みです）。
+
+### TaskCard
+
+```php
+use Rocket\Slack\BlockKit\Block\RichText;
+use Rocket\Slack\BlockKit\Block\TaskCard;
+use Rocket\Slack\BlockKit\Element\Card\SlackIcon;
+use Rocket\Slack\BlockKit\Element\RichText\RichTextSection;
+use Rocket\Slack\BlockKit\Element\RichText\Text;
+use Rocket\Slack\BlockKit\Element\TaskCard\UrlSource;
+
+$output = (new RichText())->addElement(
+    (new RichTextSection())->addElement(new Text('Found weather data for Chicago from 2 sources'))
+);
+
+$taskCard = (new TaskCard('task_1', 'Fetching weather data', TaskCard::STATUS_IN_PROGRESS))
+    ->setIcon(new SlackIcon('rocket'))
+    ->setOutput($output)
+    ->addSource(new UrlSource('https://weather.com/', 'weather.com'))
+    ->addSource(new UrlSource('https://www.accuweather.com/', 'accuweather.com'));
+
+$message->addBlock($taskCard);
+```
+
+`status` は `TaskCard::STATUS_IN_PROGRESS` / `STATUS_COMPLETE` / `STATUS_ERROR` のいずれかを指定します。`title` は（`Section` などと違い）`PlainText` オブジェクトではなく素の文字列です。`details` / `output` には `Block\RichText` を、`icon` には Card ブロックと共通の `Element\Card\SlackIcon` を再利用でき、`addSource()` で参照元 URL（`UrlSource`）を追加できます。
 
 ### ContextActions
 
