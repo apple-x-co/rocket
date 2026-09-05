@@ -3,7 +3,9 @@
 namespace Rocket;
 
 use Rocket\Slack\BlockKit\Block\Card;
+use Rocket\Slack\BlockKit\Block\Container;
 use Rocket\Slack\BlockKit\Block\Context;
+use Rocket\Slack\BlockKit\Block\ContextActions;
 use Rocket\Slack\BlockKit\Block\DataTable;
 use Rocket\Slack\BlockKit\Block\DataVisualization;
 use Rocket\Slack\BlockKit\Block\Divider;
@@ -17,6 +19,9 @@ use Rocket\Slack\BlockKit\Element\Chart\AxisConfig;
 use Rocket\Slack\BlockKit\Element\Chart\DataPoint;
 use Rocket\Slack\BlockKit\Element\Chart\LineChart;
 use Rocket\Slack\BlockKit\Element\Chart\Series;
+use Rocket\Slack\BlockKit\Element\ContextActions\FeedbackButton;
+use Rocket\Slack\BlockKit\Element\ContextActions\FeedbackButtons;
+use Rocket\Slack\BlockKit\Element\ContextActions\IconButton;
 use Rocket\Slack\BlockKit\Element\DataTable\RawNumber;
 use Rocket\Slack\BlockKit\Element\DataTable\RawText;
 use Rocket\Slack\BlockKit\Element\Image as ElementImage;
@@ -196,6 +201,44 @@ class Slack
                     ->addAction(
                         (new Button(new PlainText('Open'), 'open_url'))
                             ->setUrl($configure->read('url'))
+                    )
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                (new Container())
+                    ->setTitle(new PlainText('Deploy Summary'))
+                    ->setSubtitle(new PlainText('collapsed by default'))
+                    ->setCollapsible(true)
+                    ->setDefaultCollapsed(true)
+                    ->addChildBlock(
+                        (new Section())->setText(
+                            new Mrkdwn('*Host:* ' . gethostname() . PHP_EOL . '*User:* ' . get_current_user())
+                        )
+                    )
+                    ->addChildBlock(new Divider())
+                    ->addChildBlock(
+                        (new Context())->addElement(
+                            new Mrkdwn('Generated at ' . date('Y/m/d H:i:s'))
+                        )
+                    )
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                (new ContextActions())
+                    ->addElement(
+                        new FeedbackButtons(
+                            new FeedbackButton(new PlainText(':+1:', true), 'positive_feedback'),
+                            new FeedbackButton(new PlainText(':-1:', true), 'negative_feedback'),
+                            'deploy_feedback'
+                        )
+                    )
+                    ->addElement(
+                        (new IconButton(IconButton::ICON_TRASH, new PlainText('Dismiss')))
+                            ->setActionId('dismiss_notification')
                     )
             )
             ->addBlock(

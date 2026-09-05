@@ -195,6 +195,59 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 - `Block\DataTable`（data_table）
 - `Block\DataVisualization`（data_visualization）
 - `Block\Card`（card）
+- `Block\Container`（container）
+- `Block\ContextActions`（context_actions）
+
+### ContextActions
+
+```php
+use Rocket\Slack\BlockKit\Block\ContextActions;
+use Rocket\Slack\BlockKit\Element\ContextActions\FeedbackButton;
+use Rocket\Slack\BlockKit\Element\ContextActions\FeedbackButtons;
+use Rocket\Slack\BlockKit\Element\ContextActions\IconButton;
+use Rocket\Slack\BlockKit\Element\PlainText;
+
+$contextActions = (new ContextActions())
+    ->addElement(
+        new FeedbackButtons(
+            new FeedbackButton(new PlainText(':+1:', true), 'positive_feedback'),
+            new FeedbackButton(new PlainText(':-1:', true), 'negative_feedback'),
+            'feedback_buttons_1'
+        )
+    )
+    ->addElement(
+        (new IconButton(IconButton::ICON_TRASH, new PlainText('Delete')))
+            ->setActionId('delete_button_1')
+            ->setValue('delete_item')
+    );
+
+$message->addBlock($contextActions);
+```
+
+`addElement()` には `FeedbackButtons`（👍/👎 のような 2 択フィードバック）と `IconButton`（現状 `IconButton::ICON_TRASH` のみ対応）を最大 5 個まで追加できます。いずれもクリック時は Slack アプリの Interactivity 用エンドポイントへ通知が送られる仕組みで、rocket 自体はそれを受け取るサーバーを持たないため、実際に応答処理をしたい場合は別途 Slack アプリ側の実装が必要です。
+
+### Container
+
+```php
+use Rocket\Slack\BlockKit\Block\Container;
+use Rocket\Slack\BlockKit\Block\Context;
+use Rocket\Slack\BlockKit\Block\Divider;
+use Rocket\Slack\BlockKit\Block\Section;
+use Rocket\Slack\BlockKit\Element\Mrkdwn;
+use Rocket\Slack\BlockKit\Element\PlainText;
+
+$container = (new Container())
+    ->setTitle(new PlainText('Bulk update: 2 records selected'))
+    ->setSubtitle(new PlainText('Review changes before confirming'))
+    ->setCollapsible(true)
+    ->addChildBlock((new Section())->setText(new Mrkdwn('*DCW-1024*' . PHP_EOL . 'Status: Open → Closed')))
+    ->addChildBlock(new Divider())
+    ->addChildBlock((new Context())->addElement(new Mrkdwn(':white_check_mark: 1 record will be updated')));
+
+$message->addBlock($container);
+```
+
+`child_blocks` には他のブロックを最大 10 個まで追加できます（`addChildBlock()`）。ただし Slack がサポートする子ブロックの type は `actions` / `context` / `divider` / `file` / `header` / `image` / `input` / `rich_text` / `section` / `table` / `video` に限られ、`markdown` / `data_table` / `data_visualization` / `card` は非対応です。`title`（`PlainText`）の代わりに `setRichTextTitle()`（`Block\RichText`）でリッチテキストのタイトルも指定できます（両方指定時は `rich_text_title` が優先）。`is_collapsible` を `true` にすると `setDefaultCollapsed()` で初期状態を折りたたみにできます。
 
 ### Card
 
