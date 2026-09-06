@@ -26,6 +26,46 @@ chmod u+x rocket.phar
 ./rocket.phar --upgrade
 ```
 
+## 🏗 Build
+
+`rocket.phar` は `bin/build.php`（`composer run-script build`）でビルドします。
+
+```bash
+composer run-script download-phar-composer  # phar-composer.phar を取得（初回のみ）
+composer run-script build                   # rocket.phar を生成
+```
+
+`bin/build.php` の中身は次のとおりです。`build/` ディレクトリに `bin` / `src` / `composer.json` をコピーし、`--no-dev` で依存を再インストールしたうえで [phar-composer](https://github.com/clue/phar-composer) を使って単一の phar にまとめています。
+
+```bash
+rm -rf build && mkdir build
+cp -r bin src composer.json build/ && rm build/bin/build.php
+composer install -d build/ --no-interaction --no-progress --prefer-dist --no-dev
+php -d phar.readonly=off ./phar-composer.phar build build/
+php ./rocket.phar --info --no-color
+```
+
+GitHub Actions によるリリースビルド（`.github/workflows/publish.yml`）は `shivammathur/setup-php@v2` で PHP 5.4 環境を用意したうえで上記を実行しています。
+
+### ⚠️ ローカルビルド時の注意点（PHP 5.4 / 5.5 向け）
+
+`composer.json` の `config.platform.php` は `5.4` に固定していますが、これは依存パッケージのバージョン解決にのみ影響し、`composer install` を実行する **Composer 本体のバージョン**までは制御できません。
+
+Composer は 2.3.0 以降、生成する `vendor/autoload.php` に「PHP 5.6 未満では autoload を実行できない」というチェックを埋め込むようになりました。そのため、手元の PHP8 環境などに新しい Composer（2.3.0 以降）がインストールされた状態で `composer run-script build` を実行すると、できあがった `rocket.phar` を PHP 5.4 〜 5.5 のサーバーで動かした際に以下のような致命的エラーになります。
+
+```
+Composer 2.3.0 dropped support for autoloading on PHP <5.6 and you are running 5.4.45, please upgrade PHP or use Composer 2.2 LTS via "composer self-update --2.2". Aborting.
+```
+
+PHP 5.4 / 5.5 環境向けに `rocket.phar` をローカルでビルドしたい場合は、ビルド前に Composer を 2.2 系 LTS に切り替えてください。
+
+```bash
+composer self-update --2.2
+composer run-script build
+```
+
+（GitHub Actions の公式ビルドでは、PHP 5.4 環境を用意した時点で `shivammathur/setup-php` がその PHP バージョンで動く古い Composer を自動的に選択するため、この問題は発生しません。）
+
 ## 🚀 Quick Start
 
 典型的なセットアップから初回デプロイまでの流れです。
