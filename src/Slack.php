@@ -2,19 +2,41 @@
 
 namespace Rocket;
 
+use Rocket\Slack\BlockKit\Block\Card;
+use Rocket\Slack\BlockKit\Block\Carousel;
+use Rocket\Slack\BlockKit\Block\Container;
 use Rocket\Slack\BlockKit\Block\Context;
+use Rocket\Slack\BlockKit\Block\ContextActions;
+use Rocket\Slack\BlockKit\Block\DataTable;
+use Rocket\Slack\BlockKit\Block\DataVisualization;
 use Rocket\Slack\BlockKit\Block\Divider;
 use Rocket\Slack\BlockKit\Block\Header;
 use Rocket\Slack\BlockKit\Block\Image as BlockImage;
 use Rocket\Slack\BlockKit\Block\Section;
 use Rocket\Slack\BlockKit\Block\Markdown;
+use Rocket\Slack\BlockKit\Block\Plan;
+use Rocket\Slack\BlockKit\Block\Table;
+use Rocket\Slack\BlockKit\Element\Button;
+use Rocket\Slack\BlockKit\Element\Chart\AxisConfig;
+use Rocket\Slack\BlockKit\Element\Chart\DataPoint;
+use Rocket\Slack\BlockKit\Element\Chart\LineChart;
+use Rocket\Slack\BlockKit\Element\Chart\Series;
+use Rocket\Slack\BlockKit\Element\ContextActions\FeedbackButton;
+use Rocket\Slack\BlockKit\Element\ContextActions\FeedbackButtons;
+use Rocket\Slack\BlockKit\Element\ContextActions\IconButton;
+use Rocket\Slack\BlockKit\Element\DataTable\RawNumber;
+use Rocket\Slack\BlockKit\Element\DataTable\RawText;
+use Rocket\Slack\BlockKit\Element\Image as ElementImage;
 use Rocket\Slack\BlockKit\Element\Mrkdwn;
 use Rocket\Slack\BlockKit\Element\PlainText;
+use Rocket\Slack\BlockKit\Element\Plan\Task;
 use Rocket\Slack\BlockKit\Message;
 use Rocket\Slack\SlackIncomingResult;
 
 class Slack
 {
+    const BLOCKS_VALIDATE_URL = 'https://slack.com/api/blocks.validate';
+
     /** @var string */
     private $url = null;
 
@@ -49,11 +71,12 @@ class Slack
     }
 
     /**
-     * @param array{channel: string, username: string, icon_emoji: string, blocks: array} $data
+     * @param string $url
+     * @param array  $data
      *
      * @return SlackIncomingResult
      */
-    private function sendMessage($data)
+    private function post($url, $data)
     {
         if ($this->http === null) {
             return new SlackIncomingResult(true);
@@ -63,7 +86,7 @@ class Slack
             'Authorization: Bearer ' . $this->appOauthToken,
             'Content-Type: application/json'
         ];
-        $response = $this->http->post($this->url, $headers, $data);
+        $response = $this->http->post($url, $headers, $data);
         $body = $response->getBody();
         $result = json_decode($body, true);
 
@@ -71,7 +94,12 @@ class Slack
             return new SlackIncomingResult(true);
         }
 
-        return new SlackIncomingResult(false, $result['error']);
+        $error = $result['error'];
+        if (! empty($result['errors'])) {
+            $error .= ': ' . implode(' / ', $result['errors']);
+        }
+
+        return new SlackIncomingResult(false, $error);
     }
 
     /**
@@ -81,12 +109,37 @@ class Slack
      */
     public function send($message)
     {
+        return $this->sendRaw($message->toArray());
+    }
+
+    /**
+     * chat.postMessage に任意のペイロード（blocks 等）を送信する。channel/username は自動でマージされる。
+     *
+     * @param array{blocks?: array, text?: string} $data
+     *
+     * @return SlackIncomingResult
+     */
+    public function sendRaw($data)
+    {
         $data = array_merge([
             'channel' => $this->channel,
             'username' => $this->username,
-        ], $message->toArray());
+        ], $data);
 
-        return $this->sendMessage($data);
+        return $this->post($this->url, $data);
+    }
+
+    /**
+     * blocks.validate は channel にチャンネル名（ID 以外）を渡すと channel_not_found になる
+     * ケースが確認されているため、channel/username は自動マージしない。
+     *
+     * @param array{blocks?: array} $data
+     *
+     * @return SlackIncomingResult
+     */
+    public function validateBlocks($data)
+    {
+        return $this->post(self::BLOCKS_VALIDATE_URL, $data);
     }
 
     /**
@@ -142,6 +195,116 @@ class Slack
             ->addBlock(
                 new Divider()
             )
+            ->addBlock(
+                (new Plan('Deploy Steps'))
+                    ->addTask(new Task('step_git_pull', 'Git pull', Task::STATUS_COMPLETE))
+                    ->addTask(new Task('step_rsync', 'Rsync', Task::STATUS_COMPLETE))
+                    ->addTask(new Task('step_notify', 'Notify Slack', Task::STATUS_IN_PROGRESS))
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                // 注意: table ブロックの raw_number セルは Slack 側で描画されない事例を確認したため RawText を使用
+                // （https://docs.slack.dev/reference/block-kit/blocks/table-block 参照。data_table ブロックでは問題なし）
+                (new Table())
+                    ->addRow([new RawText('File'), new RawText('Size')])
+                    ->addRow([new RawText('index.php'), new RawText('1024 B')])
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                (new DataTable('Deploy History'))
+                    ->addRow([new RawText('Date'), new RawText('User'), new RawText('Duration (sec)')])
+                    ->addRow([new RawText(date('Y/m/d H:i:s')), new RawText(get_current_user()), new RawNumber(12, '12')])
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                new DataVisualization(
+                    'Deploy Duration',
+                    (new LineChart(new AxisConfig(['Mon', 'Tue', 'Wed'], 'Day', 'Seconds')))
+                        ->addSeries(
+                            (new Series('Duration'))
+                                ->addDataPoint(new DataPoint('Mon', 12))
+                                ->addDataPoint(new DataPoint('Tue', 9))
+                                ->addDataPoint(new DataPoint('Wed', 15))
+                        )
+                )
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                (new Card())
+                    ->setIcon(new ElementImage('https://picsum.photos/36/36?t=' . time(), 'icon'))
+                    ->setTitle(new Mrkdwn('Deploy Report'))
+                    ->setSubtitle(new Mrkdwn(gethostname()))
+                    ->setBody(new Mrkdwn($configure->read('url')))
+                    ->addAction(
+                        (new Button(new PlainText('Open'), 'open_url'))
+                            ->setUrl($configure->read('url'))
+                    )
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                (new Carousel())
+                    ->addElement(
+                        (new Card())
+                            ->setTitle(new PlainText('Git pull'))
+                            ->setBody(new PlainText('Repository updated'))
+                    )
+                    ->addElement(
+                        (new Card())
+                            ->setTitle(new PlainText('Rsync'))
+                            ->setBody(new PlainText('Files synchronized'))
+                    )
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                (new Container())
+                    ->setTitle(new PlainText('Deploy Summary'))
+                    ->setSubtitle(new PlainText('collapsed by default'))
+                    ->setCollapsible(true)
+                    ->setDefaultCollapsed(true)
+                    ->addChildBlock(
+                        (new Section())->setText(
+                            new Mrkdwn('*Host:* ' . gethostname() . PHP_EOL . '*User:* ' . get_current_user())
+                        )
+                    )
+                    ->addChildBlock(new Divider())
+                    ->addChildBlock(
+                        (new Context())->addElement(
+                            new Mrkdwn('Generated at ' . date('Y/m/d H:i:s'))
+                        )
+                    )
+            )
+            ->addBlock(
+                new Divider()
+            )
+            ->addBlock(
+                (new ContextActions())
+                    ->addElement(
+                        new FeedbackButtons(
+                            new FeedbackButton(new PlainText(':+1:', true), 'positive_feedback'),
+                            new FeedbackButton(new PlainText(':-1:', true), 'negative_feedback'),
+                            'deploy_feedback'
+                        )
+                    )
+                    ->addElement(
+                        (new IconButton(IconButton::ICON_TRASH, new PlainText('Dismiss')))
+                            ->setActionId('dismiss_notification')
+                    )
+            )
+            // 注意: plan ブロックと task_card ブロックは同じメッセージ内に同時に含められない
+            // （chat.postMessage が invalid_blocks: "Plan block and task blocks are mutually exclusive" を返す）
+            // ため、このショーケースでは task_card は省略し plan のみ送信している
             ->addBlock(
                 (new Context())
                     ->addElement(

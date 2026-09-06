@@ -24,6 +24,7 @@ class Options
             'help',
             'info',
             'notify',
+            'notify-blocks:',
             'notify-test',
             'no-color',
             'upgrade',
@@ -92,6 +93,22 @@ class Options
     public function hasNotifyTest()
     {
         return $this->has('notify-test');
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasNotifyBlocks()
+    {
+        return $this->has('notify-blocks');
+    }
+
+    /**
+     * @return 'validate'|'send'|null
+     */
+    public function getNotifyBlocks()
+    {
+        return $this->get('notify-blocks');
     }
 
     /**

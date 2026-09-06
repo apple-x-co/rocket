@@ -26,6 +26,46 @@ chmod u+x rocket.phar
 ./rocket.phar --upgrade
 ```
 
+## 🏗 Build
+
+`rocket.phar` は `bin/build.php`（`composer run-script build`）でビルドします。
+
+```bash
+composer run-script download-phar-composer  # phar-composer.phar を取得（初回のみ）
+composer run-script build                   # rocket.phar を生成
+```
+
+`bin/build.php` の中身は次のとおりです。`build/` ディレクトリに `bin` / `src` / `composer.json` をコピーし、`--no-dev` で依存を再インストールしたうえで [phar-composer](https://github.com/clue/phar-composer) を使って単一の phar にまとめています。
+
+```bash
+rm -rf build && mkdir build
+cp -r bin src composer.json build/ && rm build/bin/build.php
+composer install -d build/ --no-interaction --no-progress --prefer-dist --no-dev
+php -d phar.readonly=off ./phar-composer.phar build build/
+php ./rocket.phar --info --no-color
+```
+
+GitHub Actions によるリリースビルド（`.github/workflows/publish.yml`）は `shivammathur/setup-php@v2` で PHP 5.4 環境を用意したうえで上記を実行しています。
+
+### ⚠️ ローカルビルド時の注意点（PHP 5.4 / 5.5 向け）
+
+`composer.json` の `config.platform.php` は `5.4` に固定していますが、これは依存パッケージのバージョン解決にのみ影響し、`composer install` を実行する **Composer 本体のバージョン**までは制御できません。
+
+Composer は 2.3.0 以降、生成する `vendor/autoload.php` に「PHP 5.6 未満では autoload を実行できない」というチェックを埋め込むようになりました。そのため、手元の PHP8 環境などに新しい Composer（2.3.0 以降）がインストールされた状態で `composer run-script build` を実行すると、できあがった `rocket.phar` を PHP 5.4 〜 5.5 のサーバーで動かした際に以下のような致命的エラーになります。
+
+```
+Composer 2.3.0 dropped support for autoloading on PHP <5.6 and you are running 5.4.45, please upgrade PHP or use Composer 2.2 LTS via "composer self-update --2.2". Aborting.
+```
+
+PHP 5.4 / 5.5 環境向けに `rocket.phar` をローカルでビルドしたい場合は、ビルド前に Composer を 2.2 系 LTS に切り替えてください。
+
+```bash
+composer self-update --2.2
+composer run-script build
+```
+
+（GitHub Actions の公式ビルドでは、PHP 5.4 環境を用意した時点で `shivammathur/setup-php` がその PHP バージョンで動く古い Composer を自動的に選択するため、この問題は発生しません。）
+
 ## 🚀 Quick Start
 
 典型的なセットアップから初回デプロイまでの流れです。
@@ -61,11 +101,11 @@ chmod u+x rocket.phar
 
 `--sync` の動作モード：
 
-| モード | 動作 |
-|--------|------|
-| `dry` | ドライランのみ（実際の転送は行わない） |
-| `confirm` | ドライランを表示し、`y` 入力で本実行 |
-| `force` | 確認なしで即実行 |
+| モード    | 動作                                   |
+|-----------|----------------------------------------|
+| `dry`     | ドライランのみ（実際の転送は行わない） |
+| `confirm` | ドライランを表示し、`y` 入力で本実行   |
+| `force`   | 確認なしで即実行                       |
 
 ```bash
 # ドライラン
@@ -88,6 +128,24 @@ echo "HELLO WORLD" | ./rocket.phar -c ./rocket.json --notify
 cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 ```
 
+`markdown` ブロックは Slack 側で「1メッセージ内の全 markdown ブロックの text 合計が 12,000 文字まで」という制限があるため（超えると `msg_blocks_too_long` エラーになる）、`--notify` と `--sync` によるデプロイ通知（Git pull ログ・rsync ログ）はこの上限を超える場合、内容を切り詰めずに**複数のメッセージに自動で分割**して送信します。分割された場合、本文の先頭に `Part 2/3` や `▶ Continued from previous message` のような目印がブロックとして表示されます（メッセージの通知プレビュー用テキストではなく本文に出るので、Slack 上でも分割されたことが分かります）。
+
+### Slack Block Kit の JSON を直接送信・検証
+
+Slack Block Kit の Blocks JSON（`{"blocks": [...]}` 形式）を標準入力から渡して、送信または検証（`blocks.validate` API）ができます。
+
+```bash
+# 送信（chat.postMessage）。channel / username は設定ファイルの値が自動で使われる
+cat blocks.json | ./rocket.phar -c ./rocket.json --notify-blocks send
+
+# 検証のみ（実際には送信しない）
+cat blocks.json | ./rocket.phar -c ./rocket.json --notify-blocks validate
+```
+
+> ⚠️ **`validate` はスキーマの妥当性のみ検証**: `blocks.validate` API は JSON の形式は検証しますが、`plan` ブロックと `task_card` ブロックの相互排他のようなビジネスルールまでは検証しません。`validate` が `ok` を返しても `send` で `invalid_blocks` エラーになるケースを実機で確認済みです。確実に送れるか確認したい場合は、実際にテストチャンネルへ `send` してみることをお勧めします。
+
+`validate` モードは `channel` / `username` を自動マージしません（`slack.channel` がチャンネル名の場合、`blocks.validate` API に渡すと `channel_not_found` になる事例を確認したため）。渡す JSON に `channel` を含めたい場合は自分でチャンネル ID を指定してください。
+
 ### その他
 
 ```bash
@@ -103,22 +161,23 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 
 ## ⚙️ Options
 
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--config <file>` | `-c` | 設定ファイルのパス（JSON） |
-| `--git [pull]` | `-g` | Git 操作 |
-| `--sync [dry\|confirm\|force]` | `-s` | rsync 操作 |
-| `--notify` | `-n` | Slack 通知（stdin から読み込み） |
-| `--notify-test` | | Slack 通知テスト |
-| `--verify` | `-v` | 設定ファイルの検証 |
-| `--init [plain\|cakephp3\|eccube4\|wordpress]` | `-i` | 設定ファイルテンプレートを出力 |
-| `--upgrade` | `-u` | 最新バージョンをダウンロード |
-| `--unzip <path>` | | アップグレード時に使用する unzip のパス |
-| `--ssl [TLSv1_0\|TLSv1_1\|TLSv1_2\|TLSv1_3]` | | SSL バージョンを指定 |
-| `--info` | | バージョン情報を表示 |
-| `--help` | `-h` | ヘルプを表示 |
-| `--no-color` | | カラー出力を無効化 |
-| `--debug` | | 実行コマンドをデバッグ表示 |
+| Option                                         | Short | Description                                       |
+|------------------------------------------------|-------|---------------------------------------------------|
+| `--config <file>`                              | `-c`  | 設定ファイルのパス（JSON）                        |
+| `--git [pull]`                                 | `-g`  | Git 操作                                          |
+| `--sync [dry\|confirm\|force]`                 | `-s`  | rsync 操作                                        |
+| `--notify`                                     | `-n`  | Slack 通知（stdin から読み込み）                  |
+| `--notify-blocks [validate\|send]`             |       | Block Kit JSON の検証・送信（stdin から読み込み） |
+| `--notify-test`                                |       | Slack 通知テスト                                  |
+| `--verify`                                     | `-v`  | 設定ファイルの検証                                |
+| `--init [plain\|cakephp3\|eccube4\|wordpress]` | `-i`  | 設定ファイルテンプレートを出力                    |
+| `--upgrade`                                    | `-u`  | 最新バージョンをダウンロード                      |
+| `--unzip <path>`                               |       | アップグレード時に使用する unzip のパス           |
+| `--ssl [TLSv1_0\|TLSv1_1\|TLSv1_2\|TLSv1_3]`   |       | SSL バージョンを指定                              |
+| `--info`                                       |       | バージョン情報を表示                              |
+| `--help`                                       | `-h`  | ヘルプを表示                                      |
+| `--no-color`                                   |       | カラー出力を無効化                                |
+| `--debug`                                      |       | 実行コマンドをデバッグ表示                        |
 
 ## 📝 Configuration
 
@@ -126,13 +185,14 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 
 ```json
 {
-  "version": "1.1",
+  "version": "1.2",
   "user": "centos-user",
   "url": "https://example.com/",
   "slack": {
     "channel": "channel-name",
     "username": "project-name",
-    "incomingWebhook": "https://hooks.slack.com/services/xxx",
+    "chatPostMessageUrl": "https://slack.com/api/chat.postMessage",
+    "appOauthToken": "xxx",
     "icon": ":tada:"
   },
   "source": {
@@ -165,19 +225,251 @@ cat deploy.log | ./rocket.phar -c ./rocket.json --notify
 }
 ```
 
-| Key | Required | Description |
-|-----|----------|-------------|
-| `user` | ✓ | デプロイを許可するシステムユーザー名 |
-| `url` | ✓ | デプロイ先 URL（Slack 通知に表示） |
-| `slack.channel` | ✓ | Slack チャンネル名 |
-| `slack.username` | ✓ | Slack 投稿ユーザー名 |
-| `slack.incomingWebhook` | ✓ | Slack Incoming Webhook URL |
-| `slack.icon` | | Slack アイコン（絵文字、デフォルト: `:sparkles:`） |
-| `source.directory` | | Git リポジトリのディレクトリパス |
-| `destinations[].from` | ✓ | rsync の転送元ディレクトリ |
-| `destinations[].to` | ✓ | rsync の転送先ディレクトリ |
-| `destinations[].excludes` | | rsync で除外するパス |
-| `destinations[].scripts` | | 同期後に実行するスクリプト |
-| `rsync.path` | | rsync のパス（デフォルト: `/usr/bin/rsync`） |
-| `rsync.option` | | rsync オプション |
-| `git.path` | | git のパス（デフォルト: `/usr/bin/git`） |
+| Key                       | Required | Description                                        |
+|---------------------------|----------|----------------------------------------------------|
+| `user`                    | ✓       | デプロイを許可するシステムユーザー名               |
+| `url`                     | ✓       | デプロイ先 URL（Slack 通知に表示）                 |
+| `slack.channel`           | ✓       | Slack チャンネル名                                 |
+| `slack.username`          | ✓       | Slack 投稿ユーザー名                               |
+| `slack.incomingWebhook`   | ✓       | Slack Incoming Webhook URL                         |
+| `slack.icon`              |          | Slack アイコン（絵文字、デフォルト: `:sparkles:`） |
+| `source.directory`        |          | Git リポジトリのディレクトリパス                   |
+| `destinations[].from`     | ✓       | rsync の転送元ディレクトリ                         |
+| `destinations[].to`       | ✓       | rsync の転送先ディレクトリ                         |
+| `destinations[].excludes` |          | rsync で除外するパス                               |
+| `destinations[].scripts`  |          | 同期後に実行するスクリプト                         |
+| `rsync.path`              |          | rsync のパス（デフォルト: `/usr/bin/rsync`）       |
+| `rsync.option`            |          | rsync オプション                                   |
+| `git.path`                |          | git のパス（デフォルト: `/usr/bin/git`）           |
+
+## 🧱 Slack Block Kit
+
+`Rocket\Slack\BlockKit` 名前空間に、[Slack Block Kit](https://docs.slack.dev/block-kit) のブロックを組み立てる PHP クラス群を同梱しています（PHP 5.4 互換）。
+
+対応ブロック:
+
+- `Block\Section` / `Block\Divider` / `Block\Header` / `Block\Image` / `Block\Context` / `Block\Markdown`
+- `Block\RichText`（rich_text）
+- `Block\Table`（table）
+- `Block\DataTable`（data_table）
+- `Block\DataVisualization`（data_visualization）
+- `Block\Card`（card）
+- `Block\Carousel`（carousel）
+- `Block\Container`（container）
+- `Block\ContextActions`（context_actions）
+- `Block\TaskCard`（task_card）
+- `Block\Plan`（plan）
+
+未対応ブロック（意図的に見送り）:
+
+| ブロック | 見送り理由                                                                                                                                                                           |
+|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Alert    | 公式ドキュメント上「現在はモーダルでのみサポート」とされており、rocket は `chat.postMessage` でメッセージを送信するツールのため、実用上ほぼ使えない                                  |
+| Actions  | ボタン以外に select menu / overflow menu / date picker などの Element クラスが未実装で、対応には Element 側の追加作業が広範囲に必要                                                  |
+| Input    | モーダル / Home タブでのフォーム入力向けのブロックで、Incoming の一方向通知ツールである rocket との親和性が低い                                                                      |
+| File     | 通常の `chat.postMessage` では投稿できず、`files.remote.add` で事前登録したリモートファイルを `chat.unfurl`（リンク展開）で扱うための構造。rocket の用途（メッセージ通知）に合わない |
+| Video    | `chat.postMessage` で通常どおり使用できる見込みだが、Card/Carousel などと比べて rocket のデプロイ通知用途での需要が低いため今回は見送り                                              |
+
+### Plan
+
+```php
+use Rocket\Slack\BlockKit\Block\Plan;
+use Rocket\Slack\BlockKit\Block\RichText;
+use Rocket\Slack\BlockKit\Element\Plan\Task;
+use Rocket\Slack\BlockKit\Element\RichText\RichTextSection;
+use Rocket\Slack\BlockKit\Element\RichText\Text;
+
+$plan = (new Plan('Thinking completed'))
+    ->addTask(new Task('call_001', 'Fetched user profile information', Task::STATUS_IN_PROGRESS))
+    ->addTask(new Task('call_002', 'Checked user permissions', Task::STATUS_PENDING))
+    ->addTask(
+        (new Task('call_003', 'Generated comprehensive user report', Task::STATUS_COMPLETE))
+            ->setOutput(
+                (new RichText())->addElement(
+                    (new RichTextSection())->addElement(new Text('15 data points compiled'))
+                )
+            )
+    );
+
+$message->addBlock($plan);
+```
+
+`addTask()` に渡す `Element\Plan\Task` は `Block\TaskCard` とは別の値オブジェクトです。`status` は `Task::STATUS_IN_PROGRESS` / `STATUS_PENDING` / `STATUS_COMPLETE` のいずれかで、Task card ブロックの `error` は存在しません。`title` は素の文字列、`details` / `output` には `Block\RichText` を指定できます。`tasks` は最大 50 個、各 `task_id` は Plan 内で一意である必要があります。
+
+> ⚠️ **既知の制約**: `Block\Plan` と `Block\TaskCard` は同じメッセージ内に同時に含めることはできません。両方を含めて `chat.postMessage` すると `invalid_blocks`（`"Plan block and task blocks are mutually exclusive"`）エラーになります（公式ドキュメントには明記されていませんが、実機検証で確認済みです）。
+
+### TaskCard
+
+```php
+use Rocket\Slack\BlockKit\Block\RichText;
+use Rocket\Slack\BlockKit\Block\TaskCard;
+use Rocket\Slack\BlockKit\Element\Card\SlackIcon;
+use Rocket\Slack\BlockKit\Element\RichText\RichTextSection;
+use Rocket\Slack\BlockKit\Element\RichText\Text;
+use Rocket\Slack\BlockKit\Element\TaskCard\UrlSource;
+
+$output = (new RichText())->addElement(
+    (new RichTextSection())->addElement(new Text('Found weather data for Chicago from 2 sources'))
+);
+
+$taskCard = (new TaskCard('task_1', 'Fetching weather data', TaskCard::STATUS_IN_PROGRESS))
+    ->setIcon(new SlackIcon('rocket'))
+    ->setOutput($output)
+    ->addSource(new UrlSource('https://weather.com/', 'weather.com'))
+    ->addSource(new UrlSource('https://www.accuweather.com/', 'accuweather.com'));
+
+$message->addBlock($taskCard);
+```
+
+`status` は `TaskCard::STATUS_IN_PROGRESS` / `STATUS_COMPLETE` / `STATUS_ERROR` のいずれかを指定します。`title` は（`Section` などと違い）`PlainText` オブジェクトではなく素の文字列です。`details` / `output` には `Block\RichText` を、`icon` には Card ブロックと共通の `Element\Card\SlackIcon` を再利用でき、`addSource()` で参照元 URL（`UrlSource`）を追加できます。
+
+### ContextActions
+
+```php
+use Rocket\Slack\BlockKit\Block\ContextActions;
+use Rocket\Slack\BlockKit\Element\ContextActions\FeedbackButton;
+use Rocket\Slack\BlockKit\Element\ContextActions\FeedbackButtons;
+use Rocket\Slack\BlockKit\Element\ContextActions\IconButton;
+use Rocket\Slack\BlockKit\Element\PlainText;
+
+$contextActions = (new ContextActions())
+    ->addElement(
+        new FeedbackButtons(
+            new FeedbackButton(new PlainText(':+1:', true), 'positive_feedback'),
+            new FeedbackButton(new PlainText(':-1:', true), 'negative_feedback'),
+            'feedback_buttons_1'
+        )
+    )
+    ->addElement(
+        (new IconButton(IconButton::ICON_TRASH, new PlainText('Delete')))
+            ->setActionId('delete_button_1')
+            ->setValue('delete_item')
+    );
+
+$message->addBlock($contextActions);
+```
+
+`addElement()` には `FeedbackButtons`（👍/👎 のような 2 択フィードバック）と `IconButton`（現状 `IconButton::ICON_TRASH` のみ対応）を最大 5 個まで追加できます。いずれもクリック時は Slack アプリの Interactivity 用エンドポイントへ通知が送られる仕組みで、rocket 自体はそれを受け取るサーバーを持たないため、実際に応答処理をしたい場合は別途 Slack アプリ側の実装が必要です。
+
+### Container
+
+```php
+use Rocket\Slack\BlockKit\Block\Container;
+use Rocket\Slack\BlockKit\Block\Context;
+use Rocket\Slack\BlockKit\Block\Divider;
+use Rocket\Slack\BlockKit\Block\Section;
+use Rocket\Slack\BlockKit\Element\Mrkdwn;
+use Rocket\Slack\BlockKit\Element\PlainText;
+
+$container = (new Container())
+    ->setTitle(new PlainText('Bulk update: 2 records selected'))
+    ->setSubtitle(new PlainText('Review changes before confirming'))
+    ->setCollapsible(true)
+    ->addChildBlock((new Section())->setText(new Mrkdwn('*DCW-1024*' . PHP_EOL . 'Status: Open → Closed')))
+    ->addChildBlock(new Divider())
+    ->addChildBlock((new Context())->addElement(new Mrkdwn(':white_check_mark: 1 record will be updated')));
+
+$message->addBlock($container);
+```
+
+`child_blocks` には他のブロックを最大 10 個まで追加できます（`addChildBlock()`）。ただし Slack がサポートする子ブロックの type は `actions` / `context` / `divider` / `file` / `header` / `image` / `input` / `rich_text` / `section` / `table` / `video` に限られ、`markdown` / `data_table` / `data_visualization` / `card` は非対応です。`title`（`PlainText`）の代わりに `setRichTextTitle()`（`Block\RichText`）でリッチテキストのタイトルも指定できます（両方指定時は `rich_text_title` が優先）。`is_collapsible` を `true` にすると `setDefaultCollapsed()` で初期状態を折りたたみにできます。
+
+### Card
+
+```php
+use Rocket\Slack\BlockKit\Block\Card;
+use Rocket\Slack\BlockKit\Element\Button;
+use Rocket\Slack\BlockKit\Element\Card\SlackIcon;
+use Rocket\Slack\BlockKit\Element\Image;
+use Rocket\Slack\BlockKit\Element\Mrkdwn;
+use Rocket\Slack\BlockKit\Element\PlainText;
+
+$card = (new Card())
+    ->setIcon(new Image('https://picsum.photos/36/36', 'Icon'))
+    ->setTitle(new Mrkdwn('Lumon Industries'))
+    ->setSubtitle(new Mrkdwn('Committed to work-life balance'))
+    ->setHeroImage(new Image('https://picsum.photos/400/300', 'Sample hero image'))
+    ->setBody(new Mrkdwn('Please enjoy each card equally.'))
+    ->addAction(new Button(new PlainText('Action Button'), 'button_action'));
+
+$message->addBlock($card);
+```
+
+`icon` は事前定義済みアイコンを使う `SlackIcon`（`new SlackIcon('star-filled')` など）で代替可能です。ただし `icon` と `slack_icon` は同じ位置に描画されるため排他利用です。`title` / `subtitle` / `body` / `subtext` には `PlainText` / `Mrkdwn` が使用でき、`addAction()` には `Button` を最大 3 個まで追加できます。
+
+`Button` は `action_id` のみ（`setUrl()` 未指定）だと、クリック時に Slack アプリの Interactivity 用エンドポイントへリクエストが送られるだけで、その受け口（サーバー）がない場合は見た目上何も起こりません。クリックしてリンクを開かせたい場合は `->setUrl('https://example.com/')` を併用してください。
+
+### Carousel
+
+```php
+use Rocket\Slack\BlockKit\Block\Card;
+use Rocket\Slack\BlockKit\Block\Carousel;
+use Rocket\Slack\BlockKit\Element\Mrkdwn;
+
+$carousel = (new Carousel())
+    ->addElement((new Card())->setTitle(new Mrkdwn('MDR'))->setSubtitle(new Mrkdwn('Refining data files')))
+    ->addElement((new Card())->setTitle(new Mrkdwn('O&D'))->setSubtitle(new Mrkdwn('Optics and design')));
+
+$message->addBlock($carousel);
+```
+
+`addElement()` には `Block\Card` のみを最大 10 個（最低 1 個）まで追加できます。カード自体の組み立て方は上記 Card セクションと同じです。
+
+### Table
+
+```php
+use Rocket\Slack\BlockKit\Block\Table;
+use Rocket\Slack\BlockKit\Element\DataTable\RawNumber;
+use Rocket\Slack\BlockKit\Element\DataTable\RawText;
+use Rocket\Slack\BlockKit\Element\Table\ColumnSetting;
+
+$table = (new Table())
+    ->addRow([new RawText('File'), new RawText('Size')])
+    ->addRow([new RawText('index.php'), new RawNumber(1024, '1,024 B')])
+    ->addColumnSetting(new ColumnSetting(ColumnSetting::ALIGN_LEFT, true))
+    ->addColumnSetting(new ColumnSetting(ColumnSetting::ALIGN_RIGHT));
+
+$message->addBlock($table);
+```
+
+セルには `RawText` / `RawNumber` に加えて `Block\RichText` も使用できます。`data_table` と異なりページングやキャプションはなく、列ごとの表示設定（`align` / `is_wrapped`）を `ColumnSetting` で指定できます。
+
+> ⚠️ **既知の問題**: 2026-09 時点で確認したところ、`table` ブロックの `raw_number` セルは Slack 上で値が空白表示になる事例を確認しています（`blocks.validate` API ではペイロードは有効と判定されるため、Slack 側の描画の問題と考えられます）。同じ形式の `raw_number` セルでも `data_table` ブロックでは正常に表示されます。数値を確実に表示したい場合は、`raw_number` の代わりに `RawText` で文字列として渡すことを検討してください。
+
+### DataTable
+
+```php
+use Rocket\Slack\BlockKit\Block\DataTable;
+use Rocket\Slack\BlockKit\Element\DataTable\RawNumber;
+use Rocket\Slack\BlockKit\Element\DataTable\RawText;
+
+$table = (new DataTable('Deploy History'))
+    ->addRow([new RawText('Date'), new RawText('User'), new RawText('Duration (sec)')])
+    ->addRow([new RawText('2026/09/05 10:00:00'), new RawText('sano'), new RawNumber(12, '12')]);
+
+$message->addBlock($table);
+```
+
+セルには `RawText` / `RawNumber` に加えて `Block\RichText` も使用できます（1 行目のヘッダー行を除く）。
+
+### DataVisualization
+
+```php
+use Rocket\Slack\BlockKit\Block\DataVisualization;
+use Rocket\Slack\BlockKit\Element\Chart\AxisConfig;
+use Rocket\Slack\BlockKit\Element\Chart\DataPoint;
+use Rocket\Slack\BlockKit\Element\Chart\LineChart;
+use Rocket\Slack\BlockKit\Element\Chart\Series;
+
+$chart = (new LineChart(new AxisConfig(['Mon', 'Tue', 'Wed'], 'Day', 'Seconds')))
+    ->addSeries(
+        (new Series('Duration'))
+            ->addDataPoint(new DataPoint('Mon', 12))
+            ->addDataPoint(new DataPoint('Tue', 9))
+            ->addDataPoint(new DataPoint('Wed', 15))
+    );
+
+$message->addBlock(new DataVisualization('Deploy Duration', $chart));
+```
+
+チャートの種類は `PieChart` / `BarChart` / `AreaChart` / `LineChart` の 4 種類です。1 メッセージに含められる `DataVisualization` ブロックは最大 2 個までという Slack 側の制約があります。

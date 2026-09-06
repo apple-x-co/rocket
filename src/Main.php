@@ -7,6 +7,7 @@ use Rocket\Command\DeployCommand;
 use Rocket\Command\HelpCommand;
 use Rocket\Command\InfoCommand;
 use Rocket\Command\InitCommand;
+use Rocket\Command\SlackBlocksCommand;
 use Rocket\Command\SlackNotificationCommand;
 use Rocket\Command\SlackNotificationTestCommand;
 use Rocket\Command\UpgradeCommand;
@@ -57,7 +58,11 @@ class Main
                 }
 
                 if ($this->options->hasNotify()) {
-                    $command = new SlackNotificationCommand($this->options, $http);
+                    $command = new SlackNotificationCommand($this->options, $output, $http);
+                }
+
+                if ($this->options->hasNotifyBlocks()) {
+                    $command = new SlackBlocksCommand($this->options, $output, $http);
                 }
 
                 if ($this->options->hasNotifyTest()) {

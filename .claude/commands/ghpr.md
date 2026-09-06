@@ -1,14 +1,18 @@
 ---
-allowed-tools: Bash(gh:*), Bash(git log:*), Bash(git branch:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git config:*), Bash(git status:*), Bash(git fetch:*), Bash(git push:*), Bash(sed:*), Bash(grep:*), Bash(wc:*), Bash(sort:*), Bash(head:*), AskUserQuestion
+allowed-tools: Bash(gh:*), Bash(git log:*), Bash(git branch:*), Bash(git diff:*), Bash(git rev-parse:*), Bash(git fetch:*), Bash(git push:*), Bash(echo:*), AskUserQuestion
 description: Create a GitHub Pull Request using gh CLI
+model: haiku
 ---
+
+> version: 1.1.0
 
 ## Context
 
 - Current branch: !`git branch --show-current`
 - Remote branches: !`git branch -r`
+- Upstream: !`git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null`
 
-**重要**: Context の情報は参考程度です。PR 内容の生成には、ステップ4で明示的に取得するベースブランチとの差分コミットのみを使用してください。
+**重要**: Context のブランチ情報はそのまま利用してよい（再取得しない）。ただし PR の**内容**の生成には、ステップ3で取得する差分のみを使用すること。
 
 ## Your task
 
@@ -16,28 +20,19 @@ description: Create a GitHub Pull Request using gh CLI
 
 ### ステップ1: 事前チェック
 
-1. **gh CLI の認証確認**:
-    - `gh auth status` の結果を確認
-    - 未認証の場合は「`gh auth login` で認証してください」と通知して終了
-
-2. **現在のブランチ確認**:
-    - `git branch --show-current` で現在のブランチを取得
+1. **現在のブランチ確認**:
+    - Context の `Current branch` を使用（再取得しない）
     - `main` または `master` または `develop` の場合は「デフォルトブランチからは PR を作成できません。feature ブランチに切り替えてください」と通知して終了
 
-3. **リモートとの同期確認**:
-    - `git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null` でリモート追跡ブランチの存在を確認
-    - 存在しない場合は「リモートブランチが設定されていません。`git push -u origin <branch-name>` で push してください」と通知して終了
+2. **リモートとの同期確認**:
+    - Context の `Upstream` を使用（再取得しない）
+    - 空の場合は「リモートブランチが設定されていません。`git push -u origin <branch-name>` で push してください」と通知して終了
 
 ### ステップ2: マージ先ブランチの選択
 
 1. **利用可能なブランチ一覧を取得**:
 
-   まず、リモートブランチの生データを取得:
-   ```bash
-   git branch -r
-   ```
-
-   次に、Claude がこのデータを処理して以下を行う:
+   Context の `Remote branches`（`git branch -r` の出力）を処理対象とする（再取得しない）:
     - `origin/` プレフィックスを削除
     - `HEAD` を除外
     - 現在のブランチを除外
@@ -60,175 +55,43 @@ description: Create a GitHub Pull Request using gh CLI
         - 各 `description` には「推奨」「本番」「メインブランチ」などの説明を付与
     - デフォルト選択: `develop` が存在する場合は `develop`、なければ `main` または `master`
 
-### ステップ3: 既存 PR のチェック
-
-1. **同じブランチからの Open または Draft の PR が既に存在するか確認**:
-
-   `<現在のブランチ名>` にはステップ1で取得したブランチ名をリテラル文字列として代入する（shell substitution 不可）。
-   ```bash
-   gh pr list --head <現在のブランチ名> --base <選択されたベースブランチ> --state all --json number,title,state,url
-   ```
-
-   **重要**: `--state all` で全てのPRを取得し、Claude が `state` フィールドをチェックして **`OPEN` または `DRAFT` のPRのみ**を抽出します。`MERGED` や `CLOSED` のPRは除外してください。
-
-   出力例（Open の場合）:
-   ```json
-   [
-     {
-       "number": 123,
-       "title": "ユーザー認証機能を追加",
-       "state": "OPEN",
-       "url": "https://github.com/owner/repo/pull/123"
-     }
-   ]
-   ```
-
-   出力例（Draft の場合）:
-   ```json
-   [
-     {
-       "number": 124,
-       "title": "新機能を追加",
-       "state": "DRAFT",
-       "url": "https://github.com/owner/repo/pull/124"
-     }
-   ]
-   ```
-
-   出力例（マージ済みは除外）:
-   ```json
-   [
-     {
-       "number": 125,
-       "title": "バグ修正",
-       "state": "MERGED",
-       "url": "https://github.com/owner/repo/pull/125"
-     }
-   ]
-   ```
-   → この場合、`state` が `MERGED` なので無視します。結果として既存 PR なしと判定。
-
-   **フィルタリング後に空配列になった場合は既存 PR なし。**
-
-2. **既存 PR が見つかった場合の処理**:
-
-   **`AskUserQuestion` で対応方法を選択**:
-    - `question`: "このブランチから <ベースブランチ> への PR が既に存在します (#番号)。どうしますか？"
-    - `header`: "Existing PR"
-    - `multiSelect`: `false`
-    - `options`:
-      ```json
-      [
-        {
-          "label": "既存の PR を更新する（推奨）",
-          "description": "新しいコミットを既存の PR に追加します。タイトルと本文は更新されません。"
-        },
-        {
-          "label": "既存の PR のタイトル・本文を編集する",
-          "description": "既存の PR のメタデータを更新します。"
-        },
-        {
-          "label": "既存の PR を無視して新規 PR を作成する",
-          "description": "既存の PR はそのままにして、新しい PR を別途作成します（通常は推奨されません）。"
-        },
-        {
-          "label": "既存の PR をブラウザで確認する",
-          "description": "既存の PR を開いて内容を確認します。"
-        },
-        {
-          "label": "キャンセル",
-          "description": "何もせずに終了します。"
-        }
-      ]
-      ```
-
-3. **選択に応じた処理**:
-
-   **a) 既存の PR を更新する（推奨）**:
-
-   まず、PR の現在の状態を確認:
-   ```bash
-   gh pr view <PR番号> --json state -q .state
-   ```
-
-    - 結果が `MERGED` または `CLOSED` の場合:
-        - 「この PR は既にマージ/クローズされています。新規 PR の作成に切り替えますか？」と確認
-        - Yes → ステップ4（新規 PR 作成フロー）に進む
-        - No → 処理を終了
-
-    - 結果が `OPEN` または `DRAFT` の場合:
-
-      `<現在のブランチ名>` にはステップ1で取得したブランチ名をリテラル文字列として代入する（shell substitution 不可）。
-      ```bash
-      # 最新のコミットをリモートに push
-      git push origin <現在のブランチ名>
-      
-      # PR の URL を表示
-      gh pr view <PR番号> --json url -q .url
-      ```
-        - 「既存の PR に最新のコミットが反映されました」と報告
-        - PR の URL を表示
-
-   **b) タイトル・本文を編集する**:
-
-   まず、PR の現在の状態を確認:
-   ```bash
-   gh pr view <PR番号> --json state -q .state
-   ```
-
-    - 結果が `MERGED` または `CLOSED` の場合:
-        - 「この PR は既にマージ/クローズされています。マージ済み/クローズ済みの PR は編集できません」と通知して終了
-
-    - 結果が `OPEN` または `DRAFT` の場合:
-        - ステップ4（コミット差分の分析）に進む
-        - ステップ5（PR 候補生成）で候補を作成
-        - 選択された内容で既存 PR を更新:
-          ```bash
-          gh pr edit <PR番号> --title "<新しいタイトル>" --body "<新しい本文>"
-          ```
-
-   **c) 既存の PR を無視して新規 PR を作成する**:
-    - ステップ4（コミット差分の分析）に進む
-    - 新規 PR 作成フローを実行
-    - 注意: 同じブランチから複数の PR が存在することになります
-
-   **d) ブラウザで確認**:
-   ```bash
-   gh pr view <PR番号> --web
-   ```
-    - 処理を終了
-
-   **e) キャンセル**:
-    - 「処理をキャンセルしました」と報告して終了
-
-4. **既存 PR が見つからなかった場合**:
-    - ステップ4（コミット差分の分析）に進む
-
-### ステップ4: コミット差分の分析
+### ステップ3: 既存 PR のチェック・差分分析（統合）
 
 **🚨 最重要制約 🚨**:
 このステップでは、**以下のコマンドを実行して、その出力のみ**を使って PR 内容を生成します。
 **それ以外の情報源は一切使用禁止**です。
 
----
+**既存PRの確認とコミット差分の取得を1回のコマンド実行にまとめる**。`<現在のブランチ名>` / `<ベースブランチ>` にはステップ1・2で確定した値をリテラル文字列として代入する（shell substitution 不可）。
 
-**実行手順**:
-
-**手順1**: ベースブランチとの差分コミットを取得
 ```bash
-git fetch origin develop
-git log origin/<base-branch>..HEAD --pretty=format:"%h %s%n%b" --reverse
+echo "=== EXISTING_PR ==="
+gh pr list --head <現在のブランチ名> --base <ベースブランチ> --state all --json number,title,state,url
+echo "=== COMMITS ==="
+git fetch --no-tags --quiet origin <ベースブランチ> && git log origin/<ベースブランチ>..HEAD --pretty=tformat:"### %h %s%n%b" --reverse
+echo "=== FILES ==="
+git diff origin/<ベースブランチ>..HEAD --name-status
+echo "=== NUMSTAT ==="
+git diff origin/<ベースブランチ>..HEAD --numstat
+echo "=== STAT ==="
+git diff origin/<ベースブランチ>..HEAD --shortstat
 ```
 
-**このコマンドの出力を読む**。出力に含まれるコミットのみが、この PR に含まれます。
+**`gh` が認証エラーを返した場合**: 「`gh auth login` で認証してください」と通知して終了
+
+**読み取りルール**:
+- **既存 PR** = `EXISTING_PR` 区画のうち `state` が `OPEN` または `DRAFT` のもの（`MERGED` や `CLOSED` は除外）。フィルタリング後に空配列になった場合は既存 PR なし
+- **コミット数** = `COMMITS` 区画の `### ` で始まる行数
+- **変更ファイル一覧と新規/更新/削除** = `FILES` 区画の `A` / `M` / `D`（プロジェクトルートからの相対パス）
+- **ファイルごとの追加・削除行数**（CodeRabbit AI風テーブル用） = `NUMSTAT` 区画
+- **変更ファイル数 / 追加・削除行数（合計）** = `STAT` 区画の `N files changed, N insertions(+), N deletions(-)`
 
 **例1: 差分が2コミットの場合**
 ```
-abc1234 feat: 機能Aを実装
+### abc1234 feat: 機能Aを実装
 
 機能Aの詳細な説明
 
-def5678 fix: バグ修正
+### def5678 fix: バグ修正
 
 バグ修正の詳細
 ```
@@ -236,62 +99,99 @@ def5678 fix: バグ修正
 
 **例2: 差分が1コミットの場合**
 ```
-abc1234 refactor: コードリファクタリング
+### abc1234 refactor: コードリファクタリング
 
 不要なコードを削除
 ```
 → **この1つのコミットのみ**が PR の対象。
 
-**例3: 差分が0コミットの場合**
-```
-（出力なし）
-```
-→ PR を作成できない。「ベースブランチとの差分がありません」と通知して終了。
+**差分が0コミットの場合**: 「ベースブランチとの差分がありません」と通知して終了
 
----
+**既存 PR が見つかった場合の処理**:
 
-**手順2**: 変更ファイル一覧を取得
+**`AskUserQuestion` で対応方法を選択**:
+- `question`: "このブランチから <ベースブランチ> への PR が既に存在します (#番号)。どうしますか？"
+- `header`: "Existing PR"
+- `multiSelect`: `false`
+- `options`:
+  ```json
+  [
+    {
+      "label": "既存の PR を更新する（推奨）",
+      "description": "新しいコミットを既存の PR に追加します。タイトルと本文は更新されません。"
+    },
+    {
+      "label": "既存の PR のタイトル・本文を編集する",
+      "description": "既存の PR のメタデータを更新します。"
+    },
+    {
+      "label": "既存の PR を無視して新規 PR を作成する",
+      "description": "既存の PR はそのままにして、新しい PR を別途作成します（通常は推奨されません）。"
+    },
+    {
+      "label": "既存の PR をブラウザで確認する",
+      "description": "既存の PR を開いて内容を確認します。"
+    },
+    {
+      "label": "キャンセル",
+      "description": "何もせずに終了します。"
+    }
+  ]
+  ```
+
+**選択に応じた処理**:
+
+**a) 既存の PR を更新する（推奨）**:
+
+`state` と `url` は `EXISTING_PR` 区画の取得結果から読み取る（再取得しない）。`<現在のブランチ名>` にはステップ1で取得したブランチ名をリテラル文字列として代入する（shell substitution 不可）。
+
+- `EXISTING_PR` の `state` が `MERGED` または `CLOSED` の場合:
+    - 「この PR は既にマージ/クローズされています。新規 PR の作成に切り替えますか？」と確認
+    - Yes → 新規 PR 作成フローに進む
+    - No → 処理を終了
+
+- `state` が `OPEN` または `DRAFT` の場合:
+  ```bash
+  # 最新のコミットをリモートに push
+  git push origin <現在のブランチ名>
+  ```
+    - 「既存の PR に最新のコミットが反映されました」と報告
+    - `EXISTING_PR` の `url` を表示
+
+**b) タイトル・本文を編集する**:
+
+- `EXISTING_PR` の `state` が `MERGED` または `CLOSED` の場合:
+    - 「この PR は既にマージ/クローズされています。マージ済み/クローズ済みの PR は編集できません」と通知して終了
+
+- `state` が `OPEN` または `DRAFT` の場合:
+    - 差分は取得済みのため、そのままステップ4（変更の分類）・ステップ5（PR 候補生成）に進む
+    - 選択された内容で既存 PR を更新:
+      ```bash
+      gh pr edit <PR番号> --title "<新しいタイトル>" --body "<新しい本文>"
+      ```
+
+**c) 既存の PR を無視して新規 PR を作成する**:
+- 差分は取得済みのため、そのままステップ4（変更の分類）に進む
+- 新規 PR 作成フローを実行
+- 注意: 同じブランチから複数の PR が存在することになります
+
+**d) ブラウザで確認**:
 ```bash
-git diff origin/<base-branch>..HEAD --name-status
+gh pr view <PR番号> --web
 ```
+- 処理を終了
 
-**このコマンドの出力を読む**。プロジェクトルートからの相対パスで表示されます。
+**e) キャンセル**:
+- 「処理をキャンセルしました」と報告して終了
 
-**例**:
-```
-M       src/Module/FeatureA.php
-A       src/Module/NewFeature.php
-A       templates/feature/new.html
-```
-→ この3ファイルのみが変更されている。
+**既存 PR が見つからなかった場合**:
+- そのままステップ4（変更の分類）に進む
 
----
+### ステップ4: 変更の分類と PR 内容の生成ルール
 
-**手順3**: コミット数を確認
-```bash
-git rev-list --count origin/<base-branch>..HEAD
-```
+**変更内容の詳細分析（CodeRabbit AI風のテーブル用）**:
 
-**例**: 出力が `2` なら、2コミットが含まれる。
-
----
-
-**手順4**: 変更ファイル数を確認
-
-手順5-1で取得する `git diff origin/<base-branch>..HEAD --numstat` の出力行数を数えて変更ファイル数とする。
-
-**例**: 出力が3行なら、3ファイルが変更されている。
-
----
-
-**手順5**: 変更内容の詳細分析（CodeRabbit AI風のテーブル用）
-
-**5-1. ファイルごとの変更統計を取得**:
-```bash
-git diff origin/<base-branch>..HEAD --numstat
-```
-
-出力例:
+`NUMSTAT` 区画の出力例:
 ```
 10      5       src/Module/FeatureA.php
 50      0       src/Module/NewFeature.php
@@ -299,7 +199,7 @@ git diff origin/<base-branch>..HEAD --numstat
 ```
 → 各ファイルの追加行数と削除行数がわかる
 
-**5-2. 変更の分類と説明の生成**:
+**変更の分類と説明の生成**:
 
 コミットメッセージとファイルパスから、プロジェクトの特性に応じて変更をカテゴリ化する。
 
@@ -365,36 +265,36 @@ git diff origin/<base-branch>..HEAD --numstat
 
 ---
 
-**手順6**: PR 内容の生成ルール
+**PR 内容の生成ルール**:
 
-**使用してよい情報（手順1-5で取得したもののみ）**:
-- ✅ 手順1で取得したコミットメッセージとコミット本文
-- ✅ 手順2で取得した変更ファイルのパス
-- ✅ 手順3で取得したコミット数
-- ✅ 手順4で取得した変更ファイル数
-- ✅ 手順5で分析した変更の分類と統計
+**使用してよい情報（ステップ3で取得したもののみ）**:
+- ✅ `COMMITS` 区画で取得したコミットメッセージとコミット本文
+- ✅ `FILES` 区画で取得した変更ファイルのパス
+- ✅ `COMMITS` 区画から数えたコミット数
+- ✅ `STAT` 区画から読み取った変更ファイル数
+- ✅ `NUMSTAT` 区画で分析した変更の分類と統計
 
 **使用禁止の情報**:
 - ❌ Context セクション
 - ❌ `git log --oneline -10` などの直近のコミット
 - ❌ `git status` や作業ディレクトリの状態
 - ❌ Claude の記憶、推測、想像
-- ❌ 手順1-5の出力に含まれていない情報
+- ❌ ステップ3の出力に含まれていない情報
 
 **確認方法**:
 PR 本文に記載する全ての情報（コミット内容、ファイル名、機能名、変更内容）が、
-**手順1-5の出力から直接確認できる**ことを確認してください。
+**ステップ3の出力から直接確認できる**ことを確認してください。
 
 **具体例**:
-- もし手順1の出力に「formrun 移行」というコミットがない → PR に「formrun 移行」を書かない
-- もし手順2の出力に `src/repository/user_repository.py` がない → PR に `src/repository/user_repository.py` を書かない
-- もし手順1の出力が「エラー画面を実装」の2コミットのみ → PR には**エラー画面の実装のみ**を書く
+- もし `COMMITS` 区画に「formrun 移行」というコミットがない → PR に「formrun 移行」を書かない
+- もし `FILES` 区画に `src/repository/user_repository.py` がない → PR に `src/repository/user_repository.py` を書かない
+- もし `COMMITS` 区画が「エラー画面を実装」の2コミットのみ → PR には**エラー画面の実装のみ**を書く
 
 ---
 
 **🚨 重要 🚨**:
 このステップを正しく実行しないと、**PR に含まれない過去の作業内容**が混入します。
-手順1の出力を**必ず最初に確認**し、その出力に含まれるコミットのみから PR 内容を生成してください。
+`COMMITS` 区画の出力を**必ず最初に確認**し、その出力に含まれるコミットのみから PR 内容を生成してください。
 
 ### ステップ5: PR タイトルと本文の候補生成
 
@@ -549,9 +449,7 @@ PR 本文に記載する全ての情報（コミット内容、ファイル名�
 ```
 
 **フォーマット規則**（全候補に適用）:
-- **内容の情報源**: ステップ4で取得したコミット差分のみを使用
-    - `git log origin/<base-branch>..HEAD` の出力のみ
-    - `git diff origin/<base-branch>..HEAD --name-status` の出力のみ
+- **内容の情報源**: ステップ3で取得した `COMMITS` / `FILES` 区画の出力のみを使用
     - Context や直近のコミットは参照しない
 - タイトルとボディのメッセージは日本語
 - タイトルは72文字以内を推奨
@@ -590,7 +488,6 @@ PR 本文に記載する全ての情報（コミット内容、ファイル名�
    ```
 
    Draft PR として作成することで、レビュー前に内容を確認・調整できます。
-   Ready にする場合は、ステップ8で `gh pr ready` を実行してください。
 
 2. **既存 PR のメタデータ更新**（ステップ3で「タイトル・本文を編集する」を選択した場合）:
    ```bash
@@ -615,40 +512,13 @@ PR 本文に記載する全ての情報（コミット内容、ファイル名�
     - エラー解決のための提案を提示
 
 5. **成功時の確認**:
-    - 新規作成の場合:
-      ```bash
-      gh pr view --json url -q .url
-      ```
+    - 新規作成の場合: `gh pr create` 自身の出力から PR の URL を読み取る（`gh pr view` の追加実行は不要）
         - 「Draft PR が正常に作成されました」と日本語で報告
-        - 「Ready にする場合は `gh pr ready` を実行してください」と案内
-
-    - 更新の場合:
-      ```bash
-      gh pr view <PR番号> --json url -q .url
-      ```
+    - 更新の場合: `EXISTING_PR` 区画で取得済みの `url` を表示する
         - 「PR #<番号> のタイトルと本文を更新しました」と日本語で報告
 
     - PR の URL を表示
-    - ブラウザで PR を開くかどうかを確認（オプション）
-
-### ステップ8: 追加オプションの確認（オプション）
-
-PR 作成後、以下の追加操作をユーザーに提案:
-
-1. **Draft から Ready への変更**:
-   ```bash
-   gh pr ready <PR番号>
-   ```
-
-2. **レビュワーの追加**:
-   ```bash
-   gh pr edit <PR番号> --add-reviewer <username>
-   ```
-
-3. **ラベルの追加**:
-   ```bash
-   gh pr edit <PR番号> --add-label <label-name>
-   ```
+    - 「Ready にする場合は `gh pr ready <PR番号>`、レビュワーを追加する場合は `gh pr edit <PR番号> --add-reviewer <username>`、ラベルを追加する場合は `gh pr edit <PR番号> --add-label <label-name>` を実行してください」と案内
 
 ## 重要な制約
 
@@ -666,30 +536,24 @@ PR 作成後、以下の追加操作をユーザーに提案:
         3. 既存の PR を無視して新規 PR を作成
         4. 既存の PR をブラウザで確認
         5. キャンセル
-    - **PR 操作前に必ず状態を再確認**:
-        - `gh pr view <PR番号> --json state -q .state` で状態を取得
-        - `MERGED` または `CLOSED` の場合は操作を中止し、適切なメッセージを表示
+    - **既存 PR の `state`/`url` はステップ3の `EXISTING_PR` 区画から読み取る**（抽出段階で `OPEN`/`DRAFT` 以外は除外済みのため、操作前の再確認は行わない）
 
 ### 🚨 PR 内容生成の厳格なルール 🚨
 
 **情報源の制限（違反すると間違った PR になります）**:
 
-✅ **使用してよい情報源（ステップ4で取得）**:
-- `git log origin/<base-branch>..HEAD --pretty=format:"%h %s%n%b" --reverse` の出力
-- `git diff origin/<base-branch>..HEAD --name-status` の出力
-- `git diff origin/<base-branch>..HEAD --numstat` の出力
-- `git diff origin/<base-branch>..HEAD --shortstat` の出力
-- `git rev-list --count origin/<base-branch>..HEAD` の出力
+✅ **使用してよい情報源（ステップ3で取得）**:
+- `COMMITS` / `FILES` / `NUMSTAT` / `STAT` 区画の出力
 
 ❌ **使用禁止の情報源**:
-- Context セクションの情報
+- Context セクションの情報（ただしブランチ名など Context のブランチ情報はそのまま使ってよい）
 - `git log --oneline -10` などの直近のコミット
 - `git status` や `git diff HEAD` などの作業ディレクトリの状態
 - あなたの記憶や推測
-- その他、ステップ4で明示的に取得していない情報
+- その他、ステップ3で明示的に取得していない情報
 
 **確認方法**:
-生成した PR 内容に記載された全ての情報（コミット内容、ファイル名、変更内容など）が、ステップ4で取得したコマンドの出力から確認できることを確認してください。確認できない情報は含めてはいけません。
+生成した PR 内容に記載された全ての情報（コミット内容、ファイル名、変更内容など）が、ステップ3で取得したコマンドの出力から確認できることを確認してください。確認できない情報は含めてはいけません。
 
 **具体例（これが最も重要です）**:
 
@@ -733,7 +597,7 @@ $ git log origin/develop..HEAD --oneline
 - 3ファイル変更（✅ `git diff` の実際の結果）
 - 2コミット（✅ `git log` の実際の結果）
 ```
-→ これが**正しい**です。ステップ4で取得した差分コミットの内容のみを記載しています。
+→ これが**正しい**です。ステップ3で取得した差分コミットの内容のみを記載しています。
 
 ### ファイル名の記載ルール
 
@@ -770,13 +634,6 @@ $ git log origin/develop..HEAD --oneline
 
 ### その他の制約
 
-- **リモートブランチが最新かチェック**:
-  ```bash
-  git fetch origin
-  git status -sb | grep "ahead\|behind"
-  ```
-    - ローカルがリモートより古い場合は `git pull` を推奨
-    - ローカルがリモートより新しい場合は `git push` を推奨
 - **コミットが存在しない場合**:
     - 「ベースブランチとの差分がありません。変更をコミットしてから PR を作成してください」と通知して終了
 - **gh CLI が利用できない場合**:
@@ -790,7 +647,6 @@ $ git log origin/develop..HEAD --oneline
 $ /ghpr
 
 [ステップ1: 事前チェック]
-✓ gh CLI 認証済み
 ✓ 現在のブランチ: feature/user-authentication
 ✓ リモートブランチ設定済み
 
@@ -798,41 +654,34 @@ $ /ghpr
 > develop (推奨)
   main (メインブランチ)
 
-[ステップ3: 既存PRチェック]
-✓ 既存のPRは見つかりませんでした
-
-[ステップ4: コミット差分分析]
-手順1: ベースブランチとの差分コミットを取得
-$ git log origin/develop..HEAD --pretty=format:"%h %s%n%b" --reverse
+[ステップ3: 既存PRチェック・差分分析]
+$ echo "=== EXISTING_PR ===" && gh pr list --head feature/user-authentication --base develop --state all --json number,title,state,url && echo "=== COMMITS ===" && git fetch --no-tags --quiet origin develop && git log origin/develop..HEAD --pretty=tformat:"### %h %s%n%b" --reverse && echo "=== FILES ===" && git diff origin/develop..HEAD --name-status && echo "=== NUMSTAT ===" && git diff origin/develop..HEAD --numstat && echo "=== STAT ===" && git diff origin/develop..HEAD --shortstat
 
 出力:
-abc1234 feat: ユーザー認証機能を実装
+=== EXISTING_PR ===
+[]
+=== COMMITS ===
+### abc1234 feat: ユーザー認証機能を実装
 
 ログインとサインアップフォームを追加。
 JWT認証、バリデーション、エラーハンドリングを含む。
-
-→ ✅ この1つのコミットが PR の対象
-
-手順2-4: 変更ファイル一覧と統計を取得
-$ git diff origin/develop..HEAD --name-status
-
-出力:
+=== FILES ===
 A       src/components/LoginForm.tsx
 A       src/components/SignupForm.tsx
 A       src/hooks/useAuth.ts
 M       src/App.tsx
-
-→ 4ファイルが変更されている
-
-$ git diff origin/develop..HEAD --numstat
-
-出力:
+=== NUMSTAT ===
 120     0       src/components/LoginForm.tsx
 95      0       src/components/SignupForm.tsx
 45      0       src/hooks/useAuth.ts
 10      2       src/App.tsx
+=== STAT ===
+4 files changed, 270 insertions(+), 2 deletions(-)
 
-手順5: 変更の分類と説明の生成
+✓ 既存のPRは見つかりませんでした
+✓ この1つのコミットが PR の対象
+
+[ステップ4: 変更の分類]
 ✓ 認証コンポーネントの実装: LoginForm.tsx, SignupForm.tsx
 ✓ 認証フックの追加: useAuth.ts
 ✓ アプリケーションルートの更新: App.tsx
@@ -858,8 +707,8 @@ $ git diff origin/develop..HEAD --numstat
 ### 正常系（複数機能の変更 - テーブル形式）
 
 ```
-[ステップ4: コミット差分分析]
-変更ファイル:
+[ステップ3: 既存PRチェック・差分分析]
+=== FILES ===
 A       src/api/orders.ts
 M       src/components/OrderList.tsx
 M       src/components/OrderDetail.tsx
@@ -867,7 +716,7 @@ A       src/styles/orders.css
 M       src/App.tsx
 A       tests/api/orders.test.ts
 
-手順5: 変更の分類と説明の生成
+[ステップ4: 変更の分類]
 ✓ API実装: 1ファイル
 ✓ UIコンポーネント: 2ファイル
 ✓ スタイリング: 1ファイル
